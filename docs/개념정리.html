@@ -4,376 +4,328 @@
 <meta charset="utf-8">
 <title>포트폴리오 추천 서비스 개념 정리</title>
 <style>
-@page { size: A4; margin: 0; }
 :root{
   --ink:#111827; --ink2:#374151; --muted:#6b7280; --line:#e5e7eb; --soft:#f5f7fb;
   --blue:#2457d6; --blue-soft:#eaf0fe; --navy:#0f1b3d; --green:#047857; --green-soft:#e8f6ef;
-  --amber:#92400e; --amber-soft:#fff7e6; --red:#b42318;
+  --amber:#92400e; --amber-soft:#fff6e0;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:#fff}
-body{font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--ink);font-size:10.6pt;line-height:1.72;word-break:keep-all;-webkit-print-color-adjust:exact}
-.page{width:794px;height:1123px;overflow:hidden;padding:18mm 18mm 16mm;position:relative}
-.page:last-child{page-break-after:auto}
-h1{font-size:25pt;line-height:1.3;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
-h2{font-size:15.5pt;font-weight:800;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:10px}
-h2 .no{font-size:11pt;color:#fff;background:var(--blue);border-radius:6px;padding:1px 8px;font-weight:800}
-h3{font-size:12pt;font-weight:800;margin:16px 0 4px}
-p{margin:6px 0}
-.lead{color:var(--muted);font-size:10pt;margin:0 0 12px}
-.tag{display:inline-block;font-size:8.6pt;font-weight:700;color:var(--blue);background:var(--blue-soft);border-radius:99px;padding:1px 9px;margin:0 4px 4px 0}
-.where{font-size:8.8pt;color:var(--muted);margin:2px 0 12px}
-.where code{font-size:8.6pt}
-code{font-family:"Menlo",monospace;font-size:9pt;background:#f1f3f7;border-radius:4px;padding:0 4px}
-.box{border-radius:10px;padding:11px 14px;margin:10px 0}
-.box>b:first-child{display:block;font-size:9.4pt;margin-bottom:3px;letter-spacing:.02em}
+body{font-family:"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--ink);font-size:13.5pt;line-height:1.75;word-break:keep-all;-webkit-print-color-adjust:exact}
+.page{width:794px;height:1123px;overflow:hidden;padding:56px 56px 48px;position:relative}
+h1{font-size:34pt;line-height:1.28;margin:6px 0 12px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:23pt;font-weight:800;margin:0 0 14px;letter-spacing:-.01em;display:flex;align-items:center;gap:14px;line-height:1.3}
+h2 .no{flex:none;font-size:15pt;color:#fff;background:var(--blue);border-radius:10px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800}
+h3{font-size:16pt;font-weight:800;margin:24px 0 6px}
+p{margin:8px 0}
+b{font-weight:800}
+.sum{font-size:15.5pt;font-weight:700;line-height:1.6;background:var(--blue-soft);border-radius:14px;padding:16px 20px;margin:0 0 18px;color:#14327a}
+.box{border-radius:14px;padding:16px 20px;margin:16px 0}
+.box>b:first-child{display:block;font-size:12pt;margin-bottom:4px}
 .easy{background:var(--amber-soft)} .easy>b:first-child{color:var(--amber)}
 .ex{background:var(--green-soft)} .ex>b:first-child{color:var(--green)}
-.key{background:var(--blue-soft)} .key>b:first-child{color:var(--blue)}
-.formula{border-top:1.5px solid var(--ink);border-bottom:1px solid var(--line);padding:12px 6px;margin:10px 0;text-align:center;font-size:12pt;font-weight:600}
-.formula small{display:block;font-size:8.8pt;font-weight:400;color:var(--muted);margin-top:6px}
-.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 4px;line-height:1.35}
-.frac>span:first-child{border-bottom:1.4px solid currentColor;padding:0 5px 1px}
-.frac>span:last-child{padding:1px 5px 0}
-table{border-collapse:collapse;width:100%;font-size:9.6pt;margin:8px 0}
-th,td{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
-thead th{border-bottom:1.5px solid var(--ink);font-size:9pt;white-space:nowrap}
+.formula{border-top:2px solid var(--ink);border-bottom:1px solid var(--line);padding:16px 8px;margin:14px 0;text-align:center;font-size:18pt;font-weight:700}
+.formula small{display:block;font-size:11.5pt;font-weight:400;color:var(--muted);margin-top:8px}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 6px;line-height:1.4}
+.frac>span:first-child{border-bottom:2px solid currentColor;padding:0 8px 2px}
+.frac>span:last-child{padding:2px 8px 0}
+table{border-collapse:collapse;width:100%;font-size:12.5pt;margin:12px 0}
+th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:middle}
+thead th{border-bottom:2px solid var(--ink);font-size:11.5pt;white-space:nowrap}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:14px 0}
-.flow div{border:1.4px solid var(--line);border-radius:10px;padding:8px 8px;font-size:8.8pt;line-height:1.45}
-.flow b{display:block;color:var(--blue);font-size:8.4pt}
-.cover{background:var(--navy);color:#fff;border-radius:16px;padding:26px 26px 22px;margin-bottom:18px}
-.cover .k{font-size:9.5pt;color:#a5b4d6;font-weight:700;letter-spacing:.04em}
-.cover h1{color:#fff;margin-top:6px}
-.cover p{color:#dbe3f5;margin:0}
-.toc{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;font-size:10pt;margin:8px 0 0;padding:0;list-style:none;grid-auto-flow:column;grid-template-rows:repeat(7,auto)}
-.toc li{break-inside:avoid;padding:5px 0;border-bottom:1px dotted var(--line);display:flex;gap:8px}
-.toc li b{color:var(--blue);min-width:1.6em}
-.foot{position:absolute;bottom:9mm;left:18mm;right:18mm;font-size:8pt;color:var(--muted);display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:5px}
-ul,ol{margin:6px 0;padding-left:1.25em} li{margin:3px 0}
-.steps{counter-reset:s;list-style:none;padding:0}
-.steps li{counter-increment:s;position:relative;padding-left:26px;margin:7px 0}
-.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:8.5pt;font-weight:700;text-align:center;line-height:18px}
-.bar{display:flex;height:9px;border-radius:99px;overflow:hidden;margin:6px 0}
-.muted{color:var(--muted)}
-.hl{background:linear-gradient(transparent 60%,#ffe58a 60%)}
+.cover{background:var(--navy);color:#fff;border-radius:22px;padding:36px 36px 30px;margin-bottom:28px}
+.cover .k{font-size:12pt;color:#a5b4d6;font-weight:700}
+.cover h1{color:#fff}
+.cover p{color:#dbe3f5;margin:0;font-size:14pt}
+.flow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.flow div{border:2px solid var(--line);border-radius:14px;padding:14px 16px;line-height:1.5}
+.flow b{display:block;color:var(--blue);font-size:12pt}
+.flow span{font-size:13pt}
+.big{font-size:15pt;line-height:1.7}
+ul{margin:8px 0;padding-left:1.3em} li{margin:6px 0}
+.tag{display:inline-block;font-size:10.5pt;font-weight:700;color:var(--blue);background:var(--blue-soft);border-radius:99px;padding:2px 12px;margin-right:6px}
+.where{font-size:10pt;color:var(--muted);margin:6px 0 0}
+.foot{position:absolute;bottom:26px;left:56px;right:56px;font-size:10pt;color:var(--muted);display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}
+.pill{display:inline-block;border-radius:99px;padding:1px 12px;font-size:11pt;font-weight:700}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.row3 div{background:var(--soft);border-radius:14px;padding:14px 16px;line-height:1.5}
+.row3 b{display:block;font-size:12pt;color:var(--muted);margin-bottom:2px;font-weight:700}
+.row3 span{font-size:15pt;font-weight:800}
 </style>
 </head>
 <body>
 
-<!-- ───────── 1쪽: 표지 + 전체 흐름 ───────── -->
+<!-- 1 표지 + 흐름 -->
 <section class="page">
   <div class="cover">
-    <div class="k">데이터처리프로그래밍 · 기말 팀 프로젝트 · 개념 정리본</div>
-    <h1>포트폴리오 추천 서비스는<br>어떤 개념으로 계산되나요?</h1>
-    <p>"첫 포트폴리오" 사이트의 기능마다 쓰인 개념, 공식, 실제 숫자 예시를 처음 보는 사람도 따라올 수 있게 정리했어요. 예시 숫자는 모두 사이트가 쓰는 실제 데이터(2023.10.31 ~ 2026.10.29, 729거래일)로 계산했어요.</p>
+    <div class="k">데이터처리프로그래밍 · 기말 팀 프로젝트</div>
+    <h1>첫 포트폴리오는<br>어떻게 계산될까?</h1>
+    <p>사이트 기능마다 쓰인 개념을 쉽게 정리했어요. 예시 숫자는 모두 사이트가 쓰는 실제 데이터(2023.10 ~ 2026.10)로 계산했어요.</p>
   </div>
-
-  <h2>한눈에 보는 계산 흐름</h2>
+  <h2>계산은 6단계예요</h2>
   <div class="flow">
-    <div><b>① 입력</b>예산 · 투자 기간 · 설문 5문항</div>
-    <div><b>② 성향 판정</b>점수 5~20점 → 4가지 성향</div>
-    <div><b>③ 자산군 배분</b>성향표로 채권·주식·대안·현금 비율</div>
-    <div><b>④ 상품 비중</b>최소분산 · 위험균형 최적화</div>
-    <div><b>⑤ 금액 · 수량</b>예산 × 비중 ÷ 현재가</div>
-    <div><b>⑥ 지표 · 비교</b>연수익률 · 변동성 · MDD · 예금 비교</div>
+    <div><b>① 입력</b><span>예산 · 투자 기간 · 설문 5문항</span></div>
+    <div><b>② 성향 판정</b><span>점수로 4가지 성향 중 하나</span></div>
+    <div><b>③ 돈 나누기</b><span>성향별로 채권 · 주식 · 대안 · 현금 비율</span></div>
+    <div><b>④ ETF 비중</b><span>수학으로 가장 좋은 조합 찾기</span></div>
+    <div><b>⑤ 금액 · 수량</b><span>예산 × 비중 ÷ 현재가</span></div>
+    <div><b>⑥ 결과 숫자</b><span>수익률 · 위험 · 최대 낙폭 · 예금과 비교</span></div>
   </div>
-  <p>사이트는 이 여섯 단계를 차례로 거쳐요. ①~③은 "얼마나 위험을 감수할 사람인가"를 정하고, ④는 "같은 위험이라면 어떻게 섞는 게 가장 효율적인가"를 수학으로 풀어요. ⑤~⑥은 결과를 사람이 이해할 수 있는 금액과 숫자로 바꿔요.</p>
-
-  <h3>목차</h3>
-  <ul class="toc">
-    <li><b>1</b>데이터: ETF 8종과 일간수익률</li>
-    <li><b>2</b>연율화: × 240 과 × √240</li>
-    <li><b>3</b>투자성향 판정</li>
-    <li><b>4</b>자산군 배분과 분산투자</li>
-    <li><b>5</b>공분산과 상관계수</li>
-    <li><b>6</b>포트폴리오 변동성 √(wᵀΣw)</li>
-    <li><b>7</b>최소분산 포트폴리오</li>
-    <li><b>8</b>위험균형(리스크 패리티)</li>
-    <li><b>9</b>최종 비중 합치기</li>
-    <li><b>10</b>예산 → 금액과 수량</li>
-    <li><b>11</b>성과 지표: 누적성과 · MDD · 샤프</li>
-    <li><b>12</b>예금 수준(단기채권)과 비교</li>
-    <li><b>13</b>해시태그 규칙</li>
-    <li><b>14</b>주의할 점과 강의 연결표</li>
-  </ul>
-
-  <div class="box key" style="margin-top:16px"><b>이 문서를 읽는 법</b>
-    <p><span class="tag">강의</span> 표시는 그 개념이 나온 강의 자료예요. 노란 상자 <b style="color:var(--amber)">쉽게 말하면</b>은 개념을 일상 언어로 풀어 쓴 것이고, 초록 상자 <b style="color:var(--green)">실제 숫자로 보기</b>는 사이트 데이터로 직접 계산한 예시예요. 맨 아래 회색 글씨는 그 기능이 들어 있는 코드 위치예요.</p></div>
-  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span>1</span></div>
+  <div class="box easy"><b>한 줄로 말하면</b>
+    <p class="big">①~③은 "나는 위험을 얼마나 감수할 사람인가"를 정하고, ④는 "그 안에서 어떻게 섞어야 가장 효율적인가"를 풀어요.</p></div>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
 </section>
 
-<!-- ───────── 2쪽: 데이터 · 연율화 ───────── -->
+<!-- 2 데이터와 수익률 -->
 <section class="page">
-  <h2><span class="no">1</span>데이터: ETF 8종과 일간수익률</h2>
-  <p class="where"><span class="tag">강의</span>7주차 자산배분모형 ETF 사례 · 4장 데이터 소싱 (<code>fdr.DataReader</code>) · 5장 수익률(<code>pct_change</code>)</p>
-  <p>사이트는 국내 증권시장에 상장된 ETF 8종의 매일 종가를 써요. ETF는 지수나 자산을 그대로 따라가도록 만든 펀드라서, 1주만 사도 그 시장 전체에 나눠 투자하는 효과가 있어요. 주식 초보자가 개별 종목을 고르지 않아도 되는 이유예요.</p>
+  <h2><span class="no">1</span>데이터와 수익률</h2>
+  <div class="sum">국내 증시에 상장된 ETF 8종의 매일 종가를 쓰고, 가격 대신 "하루에 몇 % 변했나"(수익률)로 바꿔서 계산해요.</div>
   <table>
-    <thead><tr><th>자산군</th><th>상품 (종목코드)</th><th>따라가는 대상</th></tr></thead>
+    <thead><tr><th>구분</th><th>상품</th><th>따라가는 것</th></tr></thead>
     <tbody>
-      <tr><td>주식</td><td>KODEX 200 (069500)</td><td>국내 대형주 200개</td></tr>
-      <tr><td>주식</td><td>TIGER 미국S&amp;P500선물 (143850)</td><td>미국 대형주 500개</td></tr>
-      <tr><td>주식</td><td>TIGER 일본TOPIX (195920) · 차이나CSI300 (192090) · 유로스탁스50 (195930)</td><td>일본 · 중국 · 유럽 주식</td></tr>
-      <tr><td>채권·예금</td><td>KOSEF 통안채1년 (122260)</td><td>국내 1년 만기 안전한 채권</td></tr>
-      <tr><td>대안투자</td><td>TIGER 원유선물 (130680) · KOSEF 미국달러선물 (138230)</td><td>원유 가격 · 원/달러 환율</td></tr>
+      <tr><td>주식</td><td>KODEX 200 · S&amp;P500 · TOPIX · CSI300 · 유로스탁스50</td><td>한국 · 미국 · 일본 · 중국 · 유럽 주식</td></tr>
+      <tr><td>채권</td><td>통안채 1년</td><td>안전한 단기 채권</td></tr>
+      <tr><td>대안</td><td>원유선물 · 달러선물</td><td>원유 가격 · 원/달러 환율</td></tr>
     </tbody>
   </table>
-  <p>가격은 <code>update_data.py</code>가 <code>fdr.DataReader(종목코드, '2016-01-01')</code>로 한 번 받아 CSV로 저장해 두고, 사이트는 그 파일을 읽어요.</p>
-
-  <h3>일간수익률: 하루 동안 몇 % 변했나</h3>
-  <div class="formula">일간수익률 = <span class="frac"><span>오늘 종가</span><span>어제 종가</span></span> − 1<small>pandas 코드로는 <code>prices.pct_change()</code> 한 줄이에요.</small></div>
-  <div class="box ex"><b>실제 숫자로 보기</b>
-    <p>KODEX 200 종가가 2026.10.28 95,515원 → 10.29 94,465원이었어요. 일간수익률 = 94,465 ÷ 95,515 − 1 = <b>−1.10%</b>.</p>
-    <p>가격(원)이 아니라 수익률(%)로 바꾸는 이유는, 10만원짜리 ETF와 1만원짜리 ETF를 같은 기준으로 비교하기 위해서예요.</p></div>
-
-  <h2 style="margin-top:22px"><span class="no">2</span>연율화: × 240 과 × √240</h2>
-  <p class="where"><span class="tag">강의</span>5장 금융통계(변동성 연율화) · 7주차 노트북 <code>annual_ret = mean × 240</code></p>
-  <p>일간수익률은 숫자가 너무 작아서(0.1% 정도) 감이 오지 않아요. 그래서 "1년이면 어느 정도인가"로 바꾸는데, 이걸 <b>연율화</b>라고 해요. 수업 기준으로 1년 거래일을 240일로 봐요.</p>
-  <div class="two">
-    <div class="formula" style="margin:0">연 기대수익률 = 일간 평균 × 240<small>하루 평균을 240일만큼 더한다</small></div>
-    <div class="formula" style="margin:0">연 변동성 = 일간 표준편차 × √240<small>√240 ≈ 15.49</small></div>
-  </div>
-  <div class="box easy"><b>쉽게 말하면: 왜 변동성은 240이 아니라 √240을 곱하나요?</b>
-    <p>매일 오르고 내리는 움직임은 서로 일부 상쇄돼요. 오늘 +2%, 내일 −2%면 이틀 뒤엔 거의 제자리죠. 그래서 흔들림(위험)은 기간에 비례해 커지지 않고 <b>기간의 제곱근</b>에 비례해 커져요. 평균은 그대로 쌓이니 × 240, 흔들림은 상쇄되니 × √240이에요.</p></div>
-  <div class="box ex"><b>실제 숫자로 보기 (최근 3년)</b>
-    <p>KODEX 200: 일간 평균 0.191% × 240 = <b>연 45.9%</b> · 일간 표준편차 2.50% × 15.49 = <b>연 변동성 38.8%</b><br>
-    통안채1년: 일간 평균 0.013% × 240 = <b>연 3.1%</b> · 일간 표준편차 0.021% × 15.49 = <b>연 변동성 0.3%</b></p>
-    <p>국내 주식은 3년 동안 크게 올랐지만 그만큼 많이 흔들렸고, 단기채권은 조금 벌었지만 거의 흔들리지 않았어요.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>model_inputs()</code> · <code>DAYS = 240</code> · <code>LOOKBACK_YEARS = 3</code></p>
-  <div class="foot"><span>1 데이터 · 2 연율화</span><span>2</span></div>
+  <div class="box easy"><b>ETF가 뭐예요?</b>
+    <p>지수를 그대로 따라가게 만든 펀드예요. 1주만 사도 그 나라 시장 전체에 나눠 투자하는 효과가 있어서, 초보자도 종목을 고르지 않아도 돼요.</p></div>
+  <h3>일간수익률 = 어제보다 몇 % 변했나</h3>
+  <div class="formula"><span class="frac"><span>오늘 종가</span><span>어제 종가</span></span> − 1</div>
+  <div class="ex box"><b>실제 숫자로 보기</b>
+    <p>KODEX 200: 95,515원 → 94,465원<br>94,465 ÷ 95,515 − 1 = <b>−1.10%</b></p></div>
+  <p class="where">pandas로는 <code>prices.pct_change()</code> 한 줄 · 수업: 5장 금융통계, 7주차 ETF 사례</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
 </section>
 
-<!-- ───────── 3쪽: 성향 판정 · 자산군 배분 ───────── -->
+<!-- 3 연율화 -->
+<section class="page">
+  <h2><span class="no">2</span>1년 기준으로 바꾸기 (연율화)</h2>
+  <div class="sum">하루 숫자는 너무 작아서 감이 안 와요. "1년이면 얼마나?"로 바꿔서 보여줘요. 1년은 240거래일로 계산해요.</div>
+  <div class="formula">연 수익률 = 일간 평균 × 240</div>
+  <div class="formula">연 변동성 = 일간 표준편차 × √240<small>(√240 ≈ 15.5)</small></div>
+  <div class="box easy"><b>왜 변동성은 240이 아니라 √240을 곱해요?</b>
+    <p>오늘 +2%, 내일 −2%면 이틀 뒤엔 제자리예요. 이렇게 오르내림은 서로 일부 지워져서, 흔들림은 기간에 <b>비례하지 않고 제곱근에 비례</b>해서 커져요. 평균은 그대로 쌓이니까 × 240이에요.</p></div>
+  <div class="box ex"><b>실제 숫자로 보기 (최근 3년)</b>
+    <table style="margin:4px 0 0">
+      <thead><tr><th></th><th class="n">연 수익률</th><th class="n">연 변동성</th></tr></thead>
+      <tbody>
+        <tr><td>KODEX 200 (국내 주식)</td><td class="n">45.9%</td><td class="n">38.8%</td></tr>
+        <tr><td>통안채 1년 (단기채권)</td><td class="n">3.1%</td><td class="n">0.3%</td></tr>
+      </tbody></table>
+    <p style="margin-top:8px">주식은 많이 벌었지만 그만큼 크게 흔들렸고, 채권은 조금 벌고 거의 안 흔들렸어요.</p></div>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
+
+<!-- 4 성향 판정 -->
 <section class="page">
   <h2><span class="no">3</span>투자성향 판정</h2>
-  <p class="where"><span class="tag">기획</span>팀 PDF의 성향 4분류(법률신문 기사) · 설문 점수제는 서비스 설계</p>
-  <p>설문 5문항의 보기는 위에서부터 1, 2, 3, 4점이에요. <b>보수적인 답일수록 낮은 점수</b>예요. 다섯 문항 점수를 더하면 5~20점이 나오고, 구간으로 성향을 정해요.</p>
+  <div class="sum">설문 5문항의 점수를 더해서 안정형 · 안정성장형 · 성장형 · 공격형 중 하나로 나눠요.</div>
+  <p class="big">보기는 위에서부터 <b>1, 2, 3, 4점</b>이에요. 보수적인 답일수록 점수가 낮아요.</p>
   <table>
-    <thead><tr><th>문항</th><th>무엇을 보나</th><th>1점 답 예</th><th>4점 답 예</th></tr></thead>
+    <thead><tr><th>문항</th><th>1점 답 예</th><th>4점 답 예</th></tr></thead>
     <tbody>
-      <tr><td>Q1 투자 경험</td><td>투자에 익숙한가</td><td>전혀 없어요</td><td>3년 이상이에요</td></tr>
-      <tr><td>Q2 투자 목적</td><td>무엇을 원하나</td><td>원금을 꼭 지키고 싶어요</td><td>손실을 감수하고 높은 수익</td></tr>
-      <tr><td>Q3 10% 하락 시</td><td>손실에 어떻게 반응하나</td><td>바로 전부 팔래요</td><td>싸졌으니 더 살래요</td></tr>
-      <tr><td>Q4 최대 손실</td><td>견딜 수 있는 손실 크기</td><td>−5%까지</td><td>−30% 이상도 괜찮아요</td></tr>
-      <tr><td>Q5 재산 중 비중</td><td>잃어도 생활에 지장이 없나</td><td>절반 이상이에요</td><td>10% 미만이에요</td></tr>
+      <tr><td>투자 경험</td><td>전혀 없어요</td><td>3년 이상이에요</td></tr>
+      <tr><td>투자 목적</td><td>원금을 꼭 지키고 싶어요</td><td>손실 감수하고 높은 수익</td></tr>
+      <tr><td>10% 떨어지면</td><td>바로 전부 팔래요</td><td>싸졌으니 더 살래요</td></tr>
+      <tr><td>견딜 수 있는 손실</td><td>−5%까지</td><td>−30% 이상도 괜찮아요</td></tr>
+      <tr><td>재산 중 비중</td><td>절반 이상이에요</td><td>10% 미만이에요</td></tr>
     </tbody>
   </table>
-  <table style="width:auto">
-    <thead><tr><th>점수</th><th>5~8점</th><th>9~12점</th><th>13~16점</th><th>17~20점</th></tr></thead>
-    <tbody><tr><td>성향</td><td>안정형</td><td>안정성장형</td><td>성장형</td><td>공격형</td></tr></tbody>
-  </table>
-  <div class="box key"><b>투자 기간 보정</b>
-    <p>투자 기간이 <b>1년 미만</b>이면 한 단계 보수적으로 낮춰요(공격형 → 성장형). 짧은 기간에는 손실이 나도 회복할 시간이 부족하기 때문이에요. 안정형은 더 낮출 단계가 없어 그대로예요.</p></div>
-  <div class="box ex"><b>실제 숫자로 보기</b>
-    <p>경험 1~3년(3점) + 시장 평균 수익(3점) + 기다린다(3점) + −20%까지(3점) + 재산의 10~30%(3점) = <b>15점 → 성장형</b>.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>QUESTIONS</code>, <code>judge_profile()</code></p>
-
-  <h2 style="margin-top:20px"><span class="no">4</span>자산군 배분과 분산투자</h2>
-  <p class="where"><span class="tag">강의</span>10장 · 7주차 포트폴리오 이론(분산투자, 체계적/비체계적 위험) · <span class="tag">기획</span>팀 PDF 성향표</p>
-  <p>성향이 정해지면 돈을 다섯 바구니(자산군)에 나눠요. 비율은 팀 PDF에 실린 투자성향별 추천 자산배분표(법률신문, 신한 PB 기고)를 그대로 썼어요.</p>
-  <table>
-    <thead><tr><th>성향</th><th class="n">채권·예금</th><th class="n">주식</th><th class="n">대안투자</th><th class="n">자산배분</th><th class="n">현금</th><th>한 줄 설명</th></tr></thead>
-    <tbody>
-      <tr><td>안정형</td><td class="n">73%</td><td class="n">5%</td><td class="n">2%</td><td class="n">10%</td><td class="n">10%</td><td>원금 지키기가 먼저</td></tr>
-      <tr><td>안정성장형</td><td class="n">39%</td><td class="n">9%</td><td class="n">26%</td><td class="n">16%</td><td class="n">10%</td><td>안정 위주로 예금보다 조금 더</td></tr>
-      <tr><td>성장형</td><td class="n">24%</td><td class="n">26%</td><td class="n">30%</td><td class="n">10%</td><td class="n">10%</td><td>수익과 안정의 균형</td></tr>
-      <tr><td>공격형</td><td class="n">10%</td><td class="n">44%</td><td class="n">26%</td><td class="n">10%</td><td class="n">10%</td><td>높은 수익을 위해 주식 중심</td></tr>
-    </tbody>
-  </table>
-  <div class="box easy"><b>쉽게 말하면: 왜 한 곳에 몰지 않고 나누나요?</b>
-    <p>"계란을 한 바구니에 담지 마라"는 말과 같아요. 서로 다르게 움직이는 자산을 섞으면, 하나가 떨어질 때 다른 하나가 버텨 줘서 전체 흔들림이 줄어요. 다만 금리·경기처럼 시장 전체를 흔드는 위험(<b>체계적 위험</b>)은 섞어도 없어지지 않고, 회사 하나의 사고 같은 위험(<b>비체계적 위험</b>)만 줄어요.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>PROFILE_TABLE</code></p>
-  <div class="foot"><span>3 성향 판정 · 4 자산군 배분</span><span>3</span></div>
-</section>
-
-<!-- ───────── 4쪽: 공분산 · 상관계수 · 포트폴리오 변동성 ───────── -->
-<section class="page">
-  <h2><span class="no">5</span>공분산과 상관계수: 함께 움직이는 정도</h2>
-  <p class="where"><span class="tag">강의</span>5장 금융통계(공분산, 상관계수) · 7주차 PDF 2~4쪽</p>
-  <p>"서로 다르게 움직인다"를 숫자로 나타낸 게 공분산과 상관계수예요.</p>
-  <div class="two">
-    <div class="formula" style="margin:0">Cov(X, Y) = <span class="frac"><span>Σ (X − X̄)(Y − Ȳ)</span><span>n − 1</span></span><small>같이 오르면 +, 반대로 움직이면 −</small></div>
-    <div class="formula" style="margin:0">ρ = <span class="frac"><span>Cov(X, Y)</span><span>σ<sub>X</sub> × σ<sub>Y</sub></span></span><small>−1 ~ +1 사이로 맞춘 값</small></div>
+  <div class="row3">
+    <div><b>5~8점</b><span>안정형</span></div>
+    <div><b>9~12점</b><span>안정성장형</span></div>
+    <div><b>13~16점</b><span>성장형</span></div>
   </div>
-  <p><b>공분산</b>은 방향(같은 쪽인지 반대쪽인지)을 알려주지만 단위에 따라 크기가 마음대로 커져요. 그래서 두 표준편차로 나눠 −1~+1로 맞춘 <b>상관계수</b>로 강도를 비교해요. +1이면 완전히 같이, −1이면 완전히 반대로, 0이면 관계가 없어요.</p>
-  <div class="box ex"><b>실제 숫자로 보기: 우리 ETF들의 상관계수 (최근 3년 일간수익률)</b>
-    <table style="margin:4px 0 2px">
-      <thead><tr><th>짝</th><th class="n">상관계수</th><th>뜻</th></tr></thead>
-      <tbody>
-        <tr><td>미국 S&amp;P500 – 유럽 유로스탁스50</td><td class="n">+0.71</td><td>선진국 주식끼리는 꽤 같이 움직여요</td></tr>
-        <tr><td>국내 KODEX 200 – 미국 S&amp;P500</td><td class="n">+0.49</td><td>절반쯤 같이 움직여요</td></tr>
-        <tr><td>중국 CSI300 – 미국 S&amp;P500</td><td class="n">+0.19</td><td>거의 따로 움직여요</td></tr>
-        <tr><td>미국 달러 – KODEX 200</td><td class="n">−0.34</td><td><b>국내 주식이 떨어질 때 달러는 오르는</b> 경향</td></tr>
-      </tbody></table>
-    <p>달러가 국내 주식과 반대로 움직이기 때문에, 섞으면 흔들림을 크게 줄일 수 있어요. 추천 결과에 달러 비중이 꽤 들어가는 이유예요.</p></div>
-  <p>8종 사이의 공분산을 한 표로 모은 것이 <b>공분산 행렬 Σ</b>(8 × 8)이에요. 코드에서는 <code>rets.cov() * 240</code>으로 한 번에 만들어요.</p>
-
-  <h2 style="margin-top:20px"><span class="no">6</span>포트폴리오 변동성 √(wᵀΣw)</h2>
-  <p class="where"><span class="tag">강의</span>7주차 PDF 3~7쪽(포트폴리오 위험) · 10장 · 노트북 <code>get_portf_vol()</code></p>
-  <p>여러 상품을 섞은 전체의 흔들림은 각 상품 변동성의 단순 평균이 아니에요. 함께 움직이는 정도(공분산)까지 넣어 계산해요. 두 자산일 때 공식은 이래요.</p>
-  <div class="formula">σ<sub>p</sub><sup>2</sup> = w<sub>1</sub><sup>2</sup>σ<sub>1</sub><sup>2</sup> + w<sub>2</sub><sup>2</sup>σ<sub>2</sub><sup>2</sup> + 2 w<sub>1</sub>w<sub>2</sub> ρ σ<sub>1</sub>σ<sub>2</sub>
-    <small>w 비중, σ 변동성, ρ 상관계수. 자산이 여러 개면 행렬로 묶어 σ<sub>p</sub> = √(wᵀ Σ w) 로 한 번에 계산해요.</small></div>
-  <div class="box easy"><b>쉽게 말하면</b>
-    <p>마지막 항(2w<sub>1</sub>w<sub>2</sub>ρσ<sub>1</sub>σ<sub>2</sub>)이 핵심이에요. ρ가 +1보다 작을수록 이 항이 작아져서 전체 위험이 줄어요. ρ가 음수면 오히려 위험을 빼 줘요. 이게 분산투자 효과의 정체예요.</p></div>
-  <div class="box ex"><b>실제 숫자로 보기: 원유 18.3% + 달러 81.7%</b>
-    <p>원유 σ = 40.2%, 달러 σ = 9.0%, 상관계수 ρ = 0.17<br>
-    σ<sub>p</sub><sup>2</sup> = 0.183<sup>2</sup>×0.1619 + 0.817<sup>2</sup>×0.0081 + 2×0.183×0.817×0.0061 = 0.0127 → <b>σ<sub>p</sub> = 11.3%</b></p>
-    <p>단순 가중평균(0.183×40.2% + 0.817×9.0% = 14.7%)보다 작아요. 섞어서 줄어든 위험이에요.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>get_portf_vol(weight, cov_mat)</code> = <code>np.sqrt(weight.T @ cov_mat @ weight)</code></p>
-  <div class="foot"><span>5 공분산·상관계수 · 6 포트폴리오 변동성</span><span>4</span></div>
+  <div class="row3" style="grid-template-columns:1fr 2fr">
+    <div><b>17~20점</b><span>공격형</span></div>
+    <div><b>투자 기간이 1년 미만이면</b><span style="font-size:13pt">한 단계 보수적으로</span></div>
+  </div>
+  <div class="box ex"><b>실제 숫자로 보기</b>
+    <p>3점 + 3점 + 3점 + 3점 + 3점 = <b>15점 → 성장형</b></p></div>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
 </section>
 
-<!-- ───────── 5쪽: 최소분산 · 위험균형 ───────── -->
+<!-- 5 자산 나누기 -->
 <section class="page">
-  <h2><span class="no">7</span>최소분산 포트폴리오 (안정형 · 안정성장형)</h2>
-  <p class="where"><span class="tag">강의</span>7주차 PDF 21·31쪽 · 노트북 <code>minimum_variance_optimization()</code> · 6주차 최적화 기초(<code>scipy.optimize.minimize</code>)</p>
-  <p>자산군 안에 상품이 여러 개일 때(주식 5종, 대안 2종) 각각 얼마나 담을지 정해야 해요. 안정을 원하는 성향에는 <b>전체 흔들림이 가장 작아지는</b> 비중을 찾아 줘요.</p>
-  <div class="formula">찾는 것: 비중 w &nbsp;·&nbsp; 목표: σ<sub>p</sub> = √(wᵀΣw) 를 가장 작게
-    <small>조건 ① 비중을 모두 더하면 1 (100%) &nbsp; ② 각 비중은 0 이상 1 이하 (빌려서 파는 공매도 없음)</small></div>
-  <h3>컴퓨터는 어떻게 답을 찾나요? (SLSQP)</h3>
-  <ol class="steps">
-    <li>모든 상품을 똑같이 나눈 비중(예: 5종이면 20%씩)에서 출발해요.</li>
-    <li>비중을 조금씩 바꿔 보며 변동성이 줄어드는 방향을 찾아요.</li>
-    <li>"합이 1", "0~1 사이" 조건을 어기지 않는 범위에서만 움직여요.</li>
-    <li>더 바꿔도 줄지 않으면 멈추고, 그때의 비중이 답이에요.</li>
-  </ol>
-  <p>코드에서는 <code>sco.minimize(get_portf_vol, 초기비중, method='SLSQP', bounds=[(0,1)]*n, constraints={'type':'eq', 'fun': lambda x: np.sum(x)-1})</code> 한 줄이 이 일을 해요. 'eq'는 "같다(=)" 조건이라는 뜻이에요.</p>
-  <div class="box ex"><b>실제 숫자로 보기: 주식 5종에 최소분산을 쓰면</b>
-    <p>똑같이 20%씩 담으면 변동성 16.8%. 최소분산으로 풀면 미국 46.7% · 중국 32.1% · 유럽 19.9% · 일본 1.3% · 국내 0%가 나와요. 국내 주식(변동성 38.8%)은 빠지고, 덜 흔들리면서 서로 따로 움직이는 미국(15.8%)과 중국(상관 0.19)이 많이 담겨요.</p>
-    <p>대안투자(원유·달러)에 쓰면 달러 98.7%, 원유 1.3%로 거의 달러만 남아요. 변동성은 9.0%로 달러 혼자일 때와 같아요.</p></div>
-
-  <h2 style="margin-top:20px"><span class="no">8</span>위험균형 · 리스크 패리티 (성장형 · 공격형)</h2>
-  <p class="where"><span class="tag">강의</span>7주차 PDF 25~27쪽 · 노트북 <code>Risk_Contribution()</code>, <code>risk_parity_optimization()</code></p>
-  <p>최소분산은 한두 상품에 쏠리기 쉬워요. 수익도 원하는 성향에는 <b>모든 상품이 전체 위험을 똑같이 나눠 지게</b> 하는 위험균형을 써요. 돈을 똑같이 나누는 게 아니라 <b>위험을</b> 똑같이 나눠요.</p>
-  <div class="formula">위험기여도 RC<sub>i</sub> = w<sub>i</sub> × <span class="frac"><span>(Σw)<sub>i</sub></span><span>σ<sub>p</sub></span></span> &nbsp;&nbsp; 목표: 모든 i 에서 RC<sub>i</sub> = <span class="frac"><span>σ<sub>p</sub></span><span>n</span></span>
-    <small>(Σw)<sub>i</sub> / σ<sub>p</sub> 는 한계 위험기여도(MRC): 그 상품을 조금 더 담으면 전체 위험이 얼마나 늘어나는지</small></div>
-  <div class="box easy"><b>쉽게 말하면</b>
-    <p>짐을 나르는 친구 둘이 있을 때, 힘센 친구(덜 흔들리는 상품)에게 많이, 약한 친구(많이 흔들리는 상품)에게 적게 맡겨서 둘이 느끼는 무게(위험)를 같게 만드는 거예요. 두 자산이면 답이 간단해요: <b>w<sub>1</sub> = σ<sub>2</sub> ÷ (σ<sub>1</sub> + σ<sub>2</sub>)</b> — 상대방 변동성에 비례해서 담아요.</p></div>
-  <div class="box ex"><b>실제 숫자로 보기: 원유와 달러</b>
-    <p>공식: 원유 비중 = 9.0 ÷ (40.2 + 9.0) = <b>18.3%</b>, 달러 = 81.7% → 사이트 계산 결과와 정확히 같아요.<br>
-    검산: 전체 변동성 11.26%, 원유 위험기여도 5.63% = 달러 위험기여도 5.63% = 11.26% ÷ 2 ✓</p>
-    <p>주식 5종에 쓰면 국내 10.7% · 미국 23.9% · 일본 17.7% · 중국 25.9% · 유럽 21.8%로 최소분산보다 훨씬 고르게 나뉘어요.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>minimum_variance()</code>, <code>risk_contribution()</code>, <code>risk_parity()</code>, <code>MODEL_BY_PROFILE</code></p>
-  <div class="foot"><span>7 최소분산 · 8 위험균형</span><span>5</span></div>
-</section>
-
-<!-- ───────── 6쪽: 합치기 · 금액 · 지표 ───────── -->
-<section class="page">
-  <h2><span class="no">9</span>최종 비중 합치기</h2>
-  <p class="where"><span class="tag">강의</span>7주차 ETF 자산배분 사례 · 코드 <code>build_portfolio()</code></p>
-  <p>자산군 비중(성향표)과 자산군 안 비중(모형 결과)을 곱하면 상품별 최종 비중이 나와요. 같은 상품이 여러 자산군에 나오면 더해요.</p>
-  <div class="formula">상품 최종 비중 = Σ ( 자산군 비중 × 그 자산군 안의 상품 비중 )</div>
-  <p><b>"자산배분" 바구니</b>는 기사에서 자산배분형 펀드를 뜻해요. 사이트에서는 8종 전체를 위험균형으로 섞은 묶음으로 대신했어요. 통안채가 거의 흔들리지 않아서 이 묶음의 91.7%가 통안채예요.</p>
-  <div class="box ex"><b>실제 숫자로 보기: 성장형</b>
-    <p>통안채 = 채권·예금 24% × 100% + 자산배분 10% × 91.7% = <b>33.2%</b><br>
-    달러 = 대안투자 30% × 81.7% + 자산배분 10% × 3.8% = <b>24.9%</b><br>
-    원유 = 대안투자 30% × 18.3% + 자산배분 10% × 0.7% = <b>5.6%</b> · 현금 = 유동성 <b>10%</b></p></div>
-
-  <h2 style="margin-top:18px"><span class="no">10</span>예산 → 금액과 수량</h2>
-  <div class="formula">금액 = 예산 × 비중 &nbsp;·&nbsp; 수량 = 금액 ÷ 현재가 (소수점 버림) &nbsp;·&nbsp; 남는 돈 → 현금<small>현재가는 가장 최근 종가 = <code>prices.iloc[-1]</code></small></div>
-  <div class="box ex"><b>실제 숫자로 보기: 성장형 1,000만원의 통안채</b>
-    <p>1,000만원 × 33.2% = 약 331.7만원 → ÷ 104,780원 = 31.66 → <b>31주</b> 매수(324.8만원). 남은 약 6.9만원은 현금으로 가요. 그래서 현금 실제 금액은 목표 10%(100만원)보다 많은 약 121.8만원이 돼요.</p></div>
-
-  <div class="foot"><span>9 비중 합치기 · 10 금액·수량</span><span>6</span></div>
-</section>
-
-<section class="page">
-  <h2><span class="no">11</span>성과 지표: 누적성과 · 연수익률 · 변동성 · MDD · 샤프</h2>
-  <p class="where"><span class="tag">강의</span>9주차 성과평가 PDF 11~13쪽(<code>index_100</code>, MDD, 샤프) · 5장 금융통계</p>
-  <p>먼저 추천 비중을 최근 3년에 적용해 매일의 포트폴리오 수익률을 만들어요(현금 수익률은 0으로 가정).</p>
-  <div class="formula">포트폴리오 일간수익률 = Σ ( 상품 일간수익률 × 비중 ) &nbsp;·&nbsp; 누적성과 = (1 + r).cumprod() × 100</div>
+  <h2><span class="no">4</span>돈을 먼저 나눠요</h2>
+  <div class="sum">성향이 정해지면 돈을 다섯 바구니에 나눠요. 비율은 팀 PDF의 투자성향별 추천표(법률신문)를 그대로 썼어요.</div>
   <table>
-    <thead><tr><th>지표</th><th>계산</th><th>뜻</th><th class="n">성장형</th></tr></thead>
+    <thead><tr><th>성향</th><th class="n">채권·예금</th><th class="n">주식</th><th class="n">대안</th><th class="n">자산배분</th><th class="n">현금</th></tr></thead>
     <tbody>
-      <tr><td>예상 연수익률</td><td>일간 평균 × 240</td><td>1년에 평균 얼마나 늘었나</td><td class="n">8.7%</td></tr>
-      <tr><td>변동성(위험)</td><td>일간 표준편차 × √240</td><td>1년 수익률이 평균에서 보통 얼마나 오르내리나</td><td class="n">4.5%</td></tr>
-      <tr><td>최대 낙폭(MDD)</td><td>min( <span class="frac"><span>누적성과</span><span>그때까지 최고점</span></span> − 1 )</td><td>가장 나빴던 때 고점 대비 얼마나 떨어졌나</td><td class="n">−4.7%</td></tr>
-      <tr><td>샤프비율</td><td><span class="frac"><span>연수익률</span><span>변동성</span></span></td><td>위험 1단위당 수익 (계산만, 화면엔 아직 없음)</td><td class="n">1.95</td></tr>
+      <tr><td>안정형</td><td class="n">73%</td><td class="n">5%</td><td class="n">2%</td><td class="n">10%</td><td class="n">10%</td></tr>
+      <tr><td>안정성장형</td><td class="n">39%</td><td class="n">9%</td><td class="n">26%</td><td class="n">16%</td><td class="n">10%</td></tr>
+      <tr><td>성장형</td><td class="n">24%</td><td class="n">26%</td><td class="n">30%</td><td class="n">10%</td><td class="n">10%</td></tr>
+      <tr><td>공격형</td><td class="n">10%</td><td class="n">44%</td><td class="n">26%</td><td class="n">10%</td><td class="n">10%</td></tr>
     </tbody>
   </table>
-  <div class="box easy"><b>쉽게 말하면: MDD</b>
-    <p>등산하다 가장 높이 올라간 지점에서 가장 깊이 내려간 골짜기까지의 깊이예요. 성장형은 2026.6.22 고점에서 2026.10.22까지 4.7% 내려간 게 가장 컸어요. 1,000만원이면 약 47만원이에요. 코드에서는 <code>cummax()</code>로 "그때까지의 최고점"을 구해요.</p></div>
-  <p class="where code">코드: <code>recommender.py</code> → <code>allocate_budget()</code>, <code>performance()</code></p>
-  <div class="foot"><span>11 성과 지표</span><span>7</span></div>
+  <div class="box easy"><b>왜 한 곳에 안 몰고 나눠요?</b>
+    <p class="big">"계란을 한 바구니에 담지 마라"와 같아요. 서로 다르게 움직이는 자산을 섞으면, 하나가 떨어질 때 다른 하나가 버텨 줘서 전체 흔들림이 줄어요.</p></div>
+  <h3>위험은 두 종류예요</h3>
+  <table>
+    <thead><tr><th></th><th>뜻</th><th>분산투자로?</th></tr></thead>
+    <tbody>
+      <tr><td><b>시장 위험</b></td><td>금리 · 환율 · 경기처럼 모든 자산을 흔드는 것</td><td>못 없애요</td></tr>
+      <tr><td><b>개별 위험</b></td><td>회사 하나의 사고 · 파업 같은 것</td><td>줄일 수 있어요</td></tr>
+    </tbody>
+  </table>
+  <p class="where">"자산배분" 바구니는 기사에서 자산배분형 펀드를 뜻해요. 사이트에서는 ETF 8종을 위험균형으로 섞은 묶음으로 대신했어요.</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
 </section>
 
-<!-- ───────── 7쪽: 비교 · 해시태그 · 주의 · 강의 연결표 ───────── -->
+<!-- 6 상관계수와 섞으면 위험 감소 -->
 <section class="page">
-  <h2><span class="no">12</span>예금 수준(단기채권)과 비교</h2>
-  <p class="where"><span class="tag">강의</span>9주차 백테스팅(벤치마크 대비 성과) · 코드 <code>safe_index()</code></p>
-  <p>추천이 의미가 있는지 보려면 비교 기준(벤치마크)이 필요해요. 주식 초보자에게 가장 현실적인 대안은 "그냥 예금에 넣기"라서, 예금처럼 안전한 <b>통안채1년 ETF 100%</b>를 기준으로 삼았어요.</p>
+  <h2><span class="no">5</span>함께 움직이는 정도</h2>
+  <div class="sum">섞을 때 가장 중요한 건 "두 자산이 같이 움직이나, 따로 움직이나"예요. 이걸 숫자로 나타낸 게 <b>상관계수</b>예요.</div>
+  <div class="row3">
+    <div><b>+1</b><span>완전히 같이</span></div>
+    <div><b>0</b><span>서로 상관없음</span></div>
+    <div><b>−1</b><span>완전히 반대로</span></div>
+  </div>
+  <div class="box ex"><b>실제 숫자로 보기 (최근 3년)</b>
+    <table style="margin:4px 0 0">
+      <tbody>
+        <tr><td>미국 – 유럽 주식</td><td class="n"><b>+0.71</b></td><td>꽤 같이 움직여요</td></tr>
+        <tr><td>국내 – 미국 주식</td><td class="n"><b>+0.49</b></td><td>절반쯤 같이</td></tr>
+        <tr><td>중국 – 미국 주식</td><td class="n"><b>+0.19</b></td><td>거의 따로</td></tr>
+        <tr><td>달러 – 국내 주식</td><td class="n"><b>−0.34</b></td><td>반대로 움직이는 경향</td></tr>
+      </tbody></table></div>
+  <div class="box easy"><b>그래서 어떻게 되나요?</b>
+    <p class="big">달러는 국내 주식이 떨어질 때 오르는 경향이 있어서, 섞으면 흔들림이 크게 줄어요. 추천 결과에 달러가 꽤 들어가는 이유예요.</p></div>
+  <h3>섞은 전체의 위험</h3>
+  <div class="formula">σ<sub>p</sub> = √( w<sup>T</sup> Σ w )<small>w = 비중, Σ = 8개 자산의 "함께 움직이는 정도"를 모은 표(공분산 행렬)</small></div>
+  <p class="where">수업: 7주차 포트폴리오 이론, 5장 공분산 · 상관계수</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
+
+<!-- 7 최소분산 -->
+<section class="page">
+  <h2><span class="no">6</span>최소분산: 가장 덜 흔들리게</h2>
+  <div class="sum">안정형 · 안정성장형에 써요. 여러 상품을 섞어서 <b>전체 흔들림이 가장 작아지는 비중</b>을 컴퓨터가 찾아요.</div>
+  <div class="formula">σ<sub>p</sub> = √(w<sup>T</sup>Σw) 를 가장 작게<small>조건: 비중을 다 더하면 100% · 각 비중은 0% 이상 (빌려서 파는 공매도 없음)</small></div>
+  <div class="box easy"><b>컴퓨터는 어떻게 찾아요?</b>
+    <p class="big">똑같이 나눈 비중에서 시작해서, 비중을 조금씩 바꿔 가며 흔들림이 더 줄지 않을 때까지 반복해요. (파이썬 <code>scipy.optimize.minimize</code>, 방식 이름은 SLSQP)</p></div>
+  <div class="box ex"><b>실제 숫자로 보기: 주식 5종에 쓰면</b>
+    <table style="margin:4px 0 0">
+      <thead><tr><th></th><th class="n">변동성</th><th>비중</th></tr></thead>
+      <tbody>
+        <tr><td>똑같이 20%씩</td><td class="n">16.8%</td><td>국내·미국·일본·중국·유럽 각 20%</td></tr>
+        <tr><td><b>최소분산</b></td><td class="n"><b>13.3%</b></td><td>미국 47% · 중국 32% · 유럽 20% · 일본 1% · 국내 0%</td></tr>
+      </tbody></table>
+    <p style="margin-top:8px">국내 주식은 많이 흔들려서(38.8%) 빠지고, 덜 흔들리면서 따로 움직이는 미국과 중국이 많이 담겨요.</p></div>
+  <p class="where">코드: recommender.py → minimum_variance() · 수업: 7주차 최소분산 포트폴리오</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
+
+<!-- 8 위험균형 -->
+<section class="page">
+  <h2><span class="no">7</span>위험균형: 위험을 똑같이 나눠서</h2>
+  <div class="sum">성장형 · 공격형에 써요. 돈이 아니라 <b>"위험"을 상품마다 똑같이 나눠 지게</b> 해요. 최소분산보다 한 곳에 덜 쏠려요.</div>
+  <div class="box easy"><b>쉽게 말하면</b>
+    <p class="big">짐을 나르는 친구 둘이 있다면, 힘센 친구(덜 흔들리는 상품)에게 많이, 약한 친구(많이 흔들리는 상품)에게 적게 맡겨서 둘이 느끼는 무게를 같게 만드는 거예요.</p></div>
+  <h3>두 자산일 때는 공식이 간단해요</h3>
+  <div class="formula">w<sub>1</sub> = <span class="frac"><span>σ<sub>2</sub></span><span>σ<sub>1</sub> + σ<sub>2</sub></span></span><small>상대방의 변동성에 비례해서 담아요 (σ = 변동성)</small></div>
+  <div class="box ex"><b>실제 숫자로 보기: 원유와 달러</b>
+    <p>원유 변동성 40.2%, 달러 변동성 9.0%<br>
+    원유 비중 = 9.0 ÷ (40.2 + 9.0) = <b>18.3%</b><br>
+    달러 비중 = 40.2 ÷ (40.2 + 9.0) = <b>81.7%</b></p>
+    <p>사이트 계산 결과와 정확히 같아요. 많이 흔들리는 원유는 적게, 안정적인 달러는 많이 담았어요.</p></div>
+  <p class="big"><b>정리:</b> 안정형·안정성장형은 <b>최소분산</b>(덜 흔들리게), 성장형·공격형은 <b>위험균형</b>(고르게 나눠서)을 써요.</p>
+  <p class="where">코드: recommender.py → risk_parity() · 수업: 7주차 리스크 패리티 (위험기여도 RC)</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
+
+<!-- 9 합치기와 금액 -->
+<section class="page">
+  <h2><span class="no">8</span>비중 합치기, 금액과 수량</h2>
+  <div class="sum">① 바구니 비율 × ② 바구니 안 비중을 곱해서 상품별 최종 비중을 만들고, 예산으로 몇 주를 살지 계산해요.</div>
+  <div class="formula">최종 비중 = 바구니 비율 × 바구니 안 비중<small>같은 상품이 여러 바구니에 있으면 더해요</small></div>
+  <div class="box ex"><b>실제 숫자로 보기: 성장형 통안채</b>
+    <p>채권·예금 24% × 100% + 자산배분 10% × 91.7%<br>= 24% + 9.2% ≈ <b>33.2%</b></p></div>
+  <h3>예산 → 몇 주?</h3>
+  <div class="formula">수량 = <span class="frac"><span>예산 × 비중</span><span>현재가</span></span> (소수점 버림)<small>남는 돈은 현금에 더해요</small></div>
+  <div class="box ex"><b>실제 숫자로 보기: 1,000만원</b>
+    <p>1,000만원 × 33.2% = 약 331.7만원<br>331.7만원 ÷ 104,780원 = 31.66 → <b>31주</b> 매수<br>남은 약 6.9만원은 현금으로 가서, 현금이 목표 10%보다 조금 많아져요.</p></div>
+  <p class="where">코드: recommender.py → build_portfolio(), allocate_budget()</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
+
+<!-- 10 성과 지표 -->
+<section class="page">
+  <h2><span class="no">9</span>결과 숫자 읽는 법</h2>
+  <div class="sum">추천 비중을 최근 3년에 그대로 적용해서 매일의 수익률을 만들고, 그 평균과 흔들림을 보여줘요.</div>
   <table>
-    <thead><tr><th>3년 전 1,000만원으로 시작했다면</th><th class="n">지금</th><th class="n">누적 수익</th><th class="n">최대 낙폭</th></tr></thead>
+    <thead><tr><th>지표</th><th>뜻</th><th class="n">성장형</th></tr></thead>
+    <tbody>
+      <tr><td><b>예상 연수익률</b></td><td>1년에 평균 얼마나 늘었나</td><td class="n">8.7%</td></tr>
+      <tr><td><b>변동성</b></td><td>1년 수익이 평균에서 보통 얼마나 오르내리나 (클수록 위험)</td><td class="n">4.5%</td></tr>
+      <tr><td><b>최대 낙폭 MDD</b></td><td>가장 나빴을 때 고점에서 얼마나 떨어졌나</td><td class="n">−4.7%</td></tr>
+    </tbody>
+  </table>
+  <div class="box easy"><b>MDD는 이렇게 생각하세요</b>
+    <p>등산하다 가장 높은 곳에서 가장 깊은 골짜기까지의 깊이예요. 1,000만원이면 약 47만원이 줄어든 적이 있다는 뜻이에요.</p></div>
+  <h3>예금 수준과 비교 (3년 전 1,000만원)</h3>
+  <table>
+    <thead><tr><th></th><th class="n">지금</th><th class="n">수익</th><th class="n">최대 낙폭</th></tr></thead>
     <tbody>
       <tr><td>단기채권만 (예금 수준)</td><td class="n">1,100만원</td><td class="n">+10.0%</td><td class="n">−0.1%</td></tr>
-      <tr><td>안정형 추천</td><td class="n">1,113만원</td><td class="n">+11.3%</td><td class="n">−0.7%</td></tr>
-      <tr><td>안정성장형 추천</td><td class="n">1,141만원</td><td class="n">+14.1%</td><td class="n">−4.2%</td></tr>
-      <tr><td>성장형 추천</td><td class="n">1,300만원</td><td class="n">+30.0%</td><td class="n">−4.7%</td></tr>
-      <tr><td>공격형 추천</td><td class="n">1,408만원</td><td class="n">+40.8%</td><td class="n">−7.2%</td></tr>
+      <tr><td>안정형</td><td class="n">1,113만원</td><td class="n">+11.3%</td><td class="n">−0.7%</td></tr>
+      <tr><td>안정성장형</td><td class="n">1,141만원</td><td class="n">+14.1%</td><td class="n">−4.2%</td></tr>
+      <tr><td>성장형</td><td class="n">1,300만원</td><td class="n">+30.0%</td><td class="n">−4.7%</td></tr>
+      <tr><td>공격형</td><td class="n">1,408만원</td><td class="n">+40.8%</td><td class="n">−7.2%</td></tr>
     </tbody>
   </table>
-  <p>네 성향 모두 예금 수준보다 높았고, 위험을 더 질수록(공격형 쪽으로) 수익과 손실 폭이 함께 커졌어요. 수업에서 배운 "높은 수익에는 높은 위험이 따른다"는 평균-분산 관계가 그대로 보여요.</p>
-
-  <h2 style="margin-top:16px"><span class="no">13</span>해시태그 규칙</h2>
-  <p>결과 화면 위의 해시태그는 계산 결과를 보고 규칙대로 붙여요. 항상 <b>#주식초보맞춤</b>, 성향별로 #원금방어 · #안정속성장 · #균형성장 · #적극투자, 채권 50% 이상이면 #채권중심, 주식 40% 이상이면 #주식중심, 해외 주식이 국내보다 많으면 #글로벌분산, 사용 모형(#최소분산포트폴리오 · #위험균형), 투자 기간(#단기투자 · #중기투자 · #장기투자)이에요.</p>
-
-  <h2 style="margin-top:16px"><span class="no">14</span>주의할 점</h2>
-  <ul>
-    <li><b>과거 데이터 기준이에요.</b> 비중을 정한 3년과 성과를 계산한 3년이 같아서 미래를 보장하지 않아요. 진짜 검증은 9주차 <code>cal_nav</code> 방식의 리밸런싱 백테스팅으로 해야 해요.</li>
-    <li><b>매일 같은 비중을 유지한다고 가정했어요.</b> 거래비용과 세금은 넣지 않았어요.</li>
-    <li><b>현금·무위험 수익률을 0%로 뒀어요.</b> 그래서 샤프비율이 실제보다 커 보여요.</li>
-    <li><b>성향표는 2006년 기사 수치</b>예요. 팀 논의 후 바꿀 수 있어요(<code>PROFILE_TABLE</code>).</li>
-  </ul>
-
-  <h3>기능 ↔ 강의 자료 ↔ 코드 연결표</h3>
-  <table>
-    <thead><tr><th>사이트 기능</th><th>쓴 개념</th><th>강의 자료</th><th>코드</th></tr></thead>
-    <tbody>
-      <tr><td>가격 데이터</td><td>FinanceDataReader, 일간수익률</td><td>4장 · 5장 · 7주차 ETF 사례</td><td><code>update_data.py</code>, <code>model_inputs</code></td></tr>
-      <tr><td>예상 수익률·변동성</td><td>연율화 × 240, × √240</td><td>5장 금융통계</td><td><code>model_inputs</code>, <code>performance</code></td></tr>
-      <tr><td>성향 판정</td><td>점수제 · 기간 보정</td><td>팀 기획(PDF)</td><td><code>judge_profile</code></td></tr>
-      <tr><td>자산군 배분</td><td>분산투자, 성향별 배분표</td><td>10장 · 팀 PDF</td><td><code>PROFILE_TABLE</code></td></tr>
-      <tr><td>상품 비중 (안정 쪽)</td><td>최소분산, SLSQP 최적화</td><td>7주차 · 6주차 최적화 기초</td><td><code>minimum_variance</code></td></tr>
-      <tr><td>상품 비중 (성장 쪽)</td><td>위험기여도, 리스크 패리티</td><td>7주차 PDF 25~27쪽</td><td><code>risk_parity</code></td></tr>
-      <tr><td>전체 위험</td><td>공분산 행렬, √(wᵀΣw)</td><td>5장 · 7주차 PDF 3~4쪽</td><td><code>get_portf_vol</code></td></tr>
-      <tr><td>누적성과 · MDD · 샤프</td><td>cumprod, cummax</td><td>9주차 성과평가</td><td><code>performance</code></td></tr>
-      <tr><td>예금 비교</td><td>벤치마크 비교</td><td>9주차 백테스팅</td><td><code>safe_index</code></td></tr>
-    </tbody>
-  </table>
-  <p class="muted" style="font-size:8.6pt">교육용 시뮬레이션이며 투자 권유가 아니에요. 데이터: 국내 상장 ETF 8종 종가(FinanceDataReader), 계산 기간 2023.10.31 ~ 2026.10.29.</p>
-  <div class="foot"><span>12 비교 · 13 해시태그 · 14 주의할 점</span><span>8</span></div>
+  <p class="big">위험을 더 질수록 수익도 손실 폭도 함께 커져요.</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
 </section>
 
+<!-- 11 한눈에 정리 + 주의 -->
+<section class="page">
+  <h2><span class="no">★</span>한눈에 정리</h2>
+  <table>
+    <thead><tr><th>사이트 기능</th><th>쓴 개념</th><th>수업</th></tr></thead>
+    <tbody>
+      <tr><td>가격 · 수익률</td><td>ETF, 일간수익률</td><td>4 · 5장, 7주차</td></tr>
+      <tr><td>연 수익률 · 변동성</td><td>연율화 × 240, × √240</td><td>5장</td></tr>
+      <tr><td>성향 판정</td><td>점수제, 기간 보정</td><td>팀 기획</td></tr>
+      <tr><td>돈 나누기</td><td>분산투자, 성향별 배분표</td><td>10장, 팀 PDF</td></tr>
+      <tr><td>섞으면 줄어드는 위험</td><td>상관계수, 공분산 행렬</td><td>5장, 7주차</td></tr>
+      <tr><td>안정 쪽 비중</td><td>최소분산, SLSQP 최적화</td><td>7주차</td></tr>
+      <tr><td>성장 쪽 비중</td><td>위험균형(리스크 패리티)</td><td>7주차</td></tr>
+      <tr><td>MDD · 예금 비교</td><td>누적성과, 벤치마크</td><td>9주차</td></tr>
+    </tbody>
+  </table>
+  <h3>알아 둘 점</h3>
+  <ul class="big">
+    <li><b>과거 3년 기준</b>이에요. 비중을 정한 기간과 성과를 본 기간이 같아서 미래를 보장하지 않아요.</li>
+    <li>현금 수익률을 0%로 두고 거래비용은 넣지 않았어요.</li>
+    <li>성향표는 <b>2006년 기사</b> 수치예요. 팀에서 바꾸려면 <code>PROFILE_TABLE</code>만 고치면 돼요.</li>
+  </ul>
+  <p class="where" style="margin-top:20px">교육용 시뮬레이션이며 투자 권유가 아니에요. 사이트: first-portfolio.streamlit.app</p>
+  <div class="foot"><span>첫 포트폴리오 · 개념 정리본</span><span></span></div>
+</section>
 
 <script>
-/* 자동 쪽 나눔: 블록을 차례로 채우다 넘치면 다음 쪽으로. 제목은 다음 내용과 함께 넘김 */
+/* 쪽마다 넘침이 있으면 다음 쪽으로 나누고, 쪽 번호를 붙여요 */
 (function(){
   const H = 1123;
-  const blocks = [];
-  document.querySelectorAll('section.page').forEach(sec => {
-    sec.querySelectorAll(':scope > .foot').forEach(f => f.remove());
-    [...sec.children].forEach(el => blocks.push(el));
-  });
-  document.body.innerHTML = '';
-  const isHead = el => !el.classList.contains('code') && (/^H[23]$/.test(el.tagName) || el.classList.contains('where') || el.classList.contains('lead'));
-  let page;
-  const newPage = () => { page = document.createElement('section'); page.className = 'page'; page.style.height = 'auto'; document.body.appendChild(page); };
-  newPage();
-  blocks.forEach((el, i) => {
-    if (i > 0 && el.tagName === 'H2' && page.children.length) el.style.marginTop = '20px';
-    page.appendChild(el);
-    if (page.offsetHeight > H && page.children.length > 1) {
-      const carry = [el];
-      page.removeChild(el);
-      if (el.classList.contains('code') && page.children.length > 1) {   // 코드 줄은 앞 내용과 함께
-        carry.unshift(page.lastElementChild); page.removeChild(page.lastElementChild);
-      }
-      while (page.lastElementChild && isHead(page.lastElementChild) && page.children.length > 1) {
-        carry.unshift(page.lastElementChild); page.removeChild(page.lastElementChild);
-      }
-      newPage();
-      carry.forEach(c => { if (c.tagName === 'H2') c.style.marginTop = '0'; page.appendChild(c); });
+  const secs = [...document.querySelectorAll('section.page')];
+  const out = [];
+  secs.forEach(sec => {
+    const foot = sec.querySelector(':scope > .foot'); if (foot) foot.remove();
+    sec.style.height = 'auto';
+    const kids = [...sec.children];
+    let page = sec, carry = [];
+    // 넘치면 마지막 블록부터 다음 쪽으로
+    while (page.offsetHeight > H - 70 && page.children.length > 1) {
+      carry.unshift(page.lastElementChild);
+      page.removeChild(page.lastElementChild);
+    }
+    out.push(page);
+    if (carry.length) {
+      const np = document.createElement('section'); np.className = 'page'; np.style.height = 'auto';
+      carry.forEach(c => np.appendChild(c));
+      sec.after(np); out.push(np);
     }
   });
   const pages = document.querySelectorAll('section.page');
