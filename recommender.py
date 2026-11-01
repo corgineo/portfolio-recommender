@@ -26,7 +26,10 @@ ETF_INFO = {
 NAME_TO_LABEL = {v['name']: v['label'] for v in ETF_INFO.values()}
 NAME_TO_LABEL['CASH'] = '현금 (CMA·예금)'
 CASH = 'CASH'
+ETF_NAMES = [v['name'] for v in ETF_INFO.values()]
 DATA_FILE = Path(__file__).parent / 'data' / 'etf_prices.csv'
+STOCK_FILE = Path(__file__).parent / 'data' / 'stock_prices.csv'   # update_stock_data.py 가 만든 팩터 종목 가격
+STOCK_SHARE = 0.5   # 주식 몫 중 개별 종목(PER·PBR·ROE 순위합 상위, factor.py)으로 담는 비율
 
 # ── 2. 투자성향별 자산군 배분 (법률신문 기사 〈그림 1〉 수치, 팀 논의 후 수정 예정) ──
 PROFILES = ['안정형', '안정성장형', '성장형', '공격형']
@@ -72,16 +75,24 @@ def judge_profile(answers, period):
 
 
 # ── 4. 입력값: 기대수익률과 공분산 (강의: 일간수익률 평균 × 240, 공분산 × 240) ──
-def load_prices(path=DATA_FILE):
+def load_prices(path=DATA_FILE, with_stocks=False):
+    """ETF 8종 가격. with_stocks=True 면 팩터 종목 가격도 옆에 붙여요 (상장 전 날짜는 NaN)"""
     df = pd.read_csv(path, index_col=0, parse_dates=True)
+    if with_stocks:
+        stock = pd.read_csv(STOCK_FILE, index_col=0, parse_dates=True)
+        df = df.join(stock)
     return df
 
 
-def model_inputs(prices):
+def model_inputs(prices, end=None):
+    """end 를 주면 그날까지의 데이터만 써요 (백테스팅에서 과거 시점마다 다시 계산할 때)"""
+    if end is not None:
+        prices = prices.loc[:end]
     recent = prices.loc[prices.index[-1] - pd.DateOffset(years=LOOKBACK_YEARS):]
-    rets = recent.pct_change().dropna()            # 일간수익률
-    avg_returns = rets.mean() * DAYS               # 연율화 기대수익률
-    cov_mat = rets.cov() * DAYS                    # 연율화 공분산 행렬
+    etfs = [c for c in recent.columns if c in ETF_NAMES]
+    rets = recent.pct_change().dropna(subset=etfs)  # 일간수익률 (개별 종목은 상장 전이면 NaN)
+    avg_returns = rets[etfs].mean() * DAYS         # 연율화 기대수익률
+    cov_mat = rets[etfs].cov() * DAYS              # 연율화 공분산 행렬 (최적화는 ETF 끼리만)
     return rets, avg_returns, cov_mat
 
 
@@ -132,8 +143,21 @@ def optimize(names, cov_mat, model):
 
 
 # ── 6. 추천 비중 만들기 ─────────────────────────────────────────────────
-def build_portfolio(profile, cov_mat):
-    """성향표의 자산군 비중 × 자산군 안 비중 = 최종 상품별 비중"""
+def stock_sleeve(etf_names, cov_mat, model, picks):
+    """주식 몫 = ETF 최적화 비중 × (1 − STOCK_SHARE) + 팩터 종목 같은 비중 × STOCK_SHARE"""
+    etf_w = optimize(etf_names, cov_mat, model)
+    if not picks:
+        return etf_w
+    stock_w = pd.Series(1 / len(picks), index=picks)
+    return pd.concat([etf_w * (1 - STOCK_SHARE), stock_w * STOCK_SHARE])
+
+
+def build_portfolio(profile, cov_mat, picks=None):
+    """성향표의 자산군 비중 × 자산군 안 비중 = 최종 상품별 비중
+
+    picks: 팩터 종목명 리스트 (factor.py). 주면 주식 몫의 STOCK_SHARE 만큼을 이 종목들로 나눠 담아요.
+           안 주면(None) 지금처럼 ETF 만 써요.
+    """
     table = PROFILE_TABLE[profile]
     model = MODEL_BY_PROFILE[profile]
     by_group = {g: [v['name'] for v in ETF_INFO.values() if v['group'] == g] for g in ['채권·예금', '주식', '대안투자']}
@@ -141,7 +165,7 @@ def build_portfolio(profile, cov_mat):
 
     sleeves = {
         '채권·예금': optimize(by_group['채권·예금'], cov_mat, model),
-        '주식': optimize(by_group['주식'], cov_mat, model),
+        '주식': stock_sleeve(by_group['주식'], cov_mat, model, picks),
         '대안투자': optimize(by_group['대안투자'], cov_mat, model),
         '자산배분': optimize(all_etfs, cov_mat, 'RP'),      # 8종 전체를 위험균형으로 섞은 분산형 묶음
         '유동성': pd.Series(1.0, index=[CASH]),
@@ -156,6 +180,13 @@ def build_portfolio(profile, cov_mat):
     return weights / weights.sum(), detail, sleeves
 
 
+def current_picks(date=None):
+    """지금(또는 date 시점) 들고 있어야 할 팩터 종목명 리스트 → build_portfolio(..., picks=) 에 넣어요"""
+    import factor
+    picks = factor.load_picks()
+    return factor.picks_on(picks, date if date is not None else picks['리밸런싱일'].max())
+
+
 # ── 7. 예산 → 금액·수량 ────────────────────────────────────────────────
 def allocate_budget(weights, prices, budget):
     last = prices.iloc[-1]
@@ -167,7 +198,7 @@ def allocate_budget(weights, prices, budget):
         qty = int(budget * w // price)             # 1주 단위로 살 수 있는 수량
         cost = qty * price
         spent += cost
-        rows.append({'상품': NAME_TO_LABEL[name], '비중(%)': w * 100, '금액(원)': cost,
+        rows.append({'상품': NAME_TO_LABEL.get(name, name), '비중(%)': w * 100, '금액(원)': cost,
                      '현재가(원)': price, '수량(주)': qty})
     rows.append({'상품': NAME_TO_LABEL[CASH], '비중(%)': weights.get(CASH, 0) * 100,
                  '금액(원)': budget - spent, '현재가(원)': None, '수량(주)': None})
@@ -176,7 +207,7 @@ def allocate_budget(weights, prices, budget):
 
 # ── 8. 성과 지표 (강의: 연율화 수익률·변동성, 샤프비율, MDD) ────────────────
 def performance(weights, rets):
-    r = rets.copy()
+    r = rets.fillna(0)                             # 개별 종목 상장 전 날짜는 0
     r[CASH] = 0.0                                  # 초안: 현금 수익률 0으로 가정
     port = r[weights.index] @ weights.values       # 매일 같은 비중을 유지한다고 가정
     ann_ret = port.mean() * DAYS
