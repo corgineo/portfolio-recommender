@@ -11,8 +11,12 @@
 | `app.py` | 웹 화면 (Streamlit). 첫 화면 → 진단 → 결과 3개 화면 |
 | `assets/style.css` | 화면 디자인 (색, 글꼴, 카드 모양) |
 | `recommender.py` | 추천 로직 전부 (성향 판정, 성향표, 최소분산·위험균형 최적화, 성과 지표) |
+| `factor.py` | 주식 몫 일부를 개별 종목으로: 저PER·저PBR·고ROE 순위합 상위 5종목 |
+| `backtest.py` | 연 1회(4월) 리밸런싱 백테스팅과 성과 지표 (CAGR·변동성·샤프·소르티노·MDD·연도별 수익률) |
 | `update_data.py` | ETF 8종 가격을 FinanceDataReader로 받아 `data/etf_prices.csv` 저장 |
-| `data/etf_prices.csv` | 이미 받아 둔 가격 데이터 (2016-01-04 ~ 2026-10-29) |
+| `update_stock_data.py` | 연도별 팩터 종목 선정 → `data/factor_picks.csv`, 선정 종목 가격 → `data/stock_prices.csv` |
+| `data/etf_prices.csv` | 이미 받아 둔 가격 데이터 (2016-01-04 ~ 2026-10-30) |
+| `data/재무_2026.csv` | 강의 재무 데이터 (806종목, 2000~2025 회계연도) |
 | `requirements.txt` | 설치할 패키지 목록 |
 
 ## 처음 한 번만: 설치
@@ -48,6 +52,19 @@ streamlit run app.py
 ```bash
 python update_data.py
 ```
+
+## 팩터 종목 · 백테스팅 (선택)
+
+`data/factor_picks.csv`, `data/stock_prices.csv`가 이미 있어요. 다시 만들 때만 강의 `실습데이터/KOSPI_PRICE_SAMPLE.csv`를 `data/raw/`에 복사하고 실행하세요 (용량이 커서 git에는 안 올려요).
+
+```bash
+python update_stock_data.py
+python backtest.py              # 성향별 성과표 출력
+```
+
+계산 방법, 결과, 검증, 한계는 [docs/백테스팅_팩터_계산정리.md](docs/백테스팅_팩터_계산정리.md)에 정리했어요.
+
+화면에서 쓰는 법: `rc.build_portfolio(profile, cov_mat, picks=rc.current_picks())`로 주식 몫의 50%를 팩터 종목으로 나누고, `backtest.compare(profile)`로 누적가치·성과표·연도별 수익률을 받아요.
 
 ## 공유할 때
 
