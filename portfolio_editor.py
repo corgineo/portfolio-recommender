@@ -33,6 +33,12 @@ def render_portfolio_editor(assets, recommended_weights, *, default_budget=1_000
     def reset():
         for t in codes:
             st.session_state[wk(t)] = recommended[t]
+    def cap_weight(ticker):
+        other_total = sum(st.session_state[wk(t)] for t in codes if t != ticker)
+        available = max(0.0, 100.0 - other_total)
+        if st.session_state[wk(ticker)] > available:
+            st.session_state[wk(ticker)] = available
+
     if st.session_state.get(f'{key}_signature') != signature:
         reset()
         st.session_state[f'{key}_signature'] = signature
@@ -44,13 +50,14 @@ def render_portfolio_editor(assets, recommended_weights, *, default_budget=1_000
     st.caption('가격은 표시된 기준일의 원화 1주 가격이야. 수수료·세금·호가 차이는 계산에서 제외해.')
     st.button('추천 비중으로 초기화', on_click=reset, key=f'{key}_reset')
     st.subheader('1. 투자 비중 조정')
-    st.caption('종목을 제외하려면 0%로 설정해. 합계가 100% 미만이면 나머지는 현금으로 남아.')
+    st.caption('종목을 제외하려면 0%로 설정해. 합계가 100%를 넘으면 방금 조정한 비중을 남은 한도에 맞춰. 남은 비중은 현금으로 둬.')
     cols = st.columns(2)
     weights = {}
     for i, row in enumerate(assets.itertuples(index=False)):
         with cols[i % 2]:
             weights[row.ticker] = st.slider(f'{row.name} · {row.asset_class} (%)',
-                0.0, 100.0, step=1.0, key=wk(row.ticker))
+                0.0, 100.0, step=0.01, key=wk(row.ticker),
+                on_change=cap_weight, args=(row.ticker,))
     total = sum(weights.values())
     st.metric('설정한 비중 합계', f'{total:.1f}%')
     if total > 100 + 1e-8:
