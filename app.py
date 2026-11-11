@@ -14,6 +14,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 import recommender as rc
+from c_integration import render_existing_editor
 
 importlib.reload(rc)   # recommender.py 를 고쳐도 서버를 다시 켜지 않고 바로 반영되게
 
@@ -29,8 +30,11 @@ DESC = {'KOSPI200': '국내 대형주 200', 'SP500': '미국 주식', 'TOPIX': '
 CODE = {v['name']: k for k, v in rc.ETF_INFO.items()}
 
 st.set_page_config(page_title=APP_NAME, page_icon='📊', layout='wide', initial_sidebar_state='collapsed')
-st.markdown(f"<style>{(Path(__file__).parent / 'assets' / 'style.css').read_text(encoding='utf-8')}</style>",
-            unsafe_allow_html=True)
+style_file = Path(__file__).parent / 'assets' / 'style.css'
+if style_file.exists():
+    st.markdown(f"<style>{style_file.read_text(encoding='utf-8')}</style>", unsafe_allow_html=True)
+else:
+    st.info('assets/style.css가 없어 기본 디자인으로 표시해요.')
 
 
 @st.cache_data
@@ -40,7 +44,11 @@ def get_data():
     return prices, rets, avg_returns, cov_mat
 
 
-prices, rets, avg_returns, cov_mat = get_data()
+try:
+    prices, rets, avg_returns, cov_mat = get_data()
+except FileNotFoundError:
+    st.error('data/etf_prices.csv가 없어요. 기존 저장소의 data 폴더를 유지하거나 python update_data.py로 생성해 주세요.')
+    st.stop()
 
 # ── 화면 상태 ─────────────────────────────────────────────────────────
 ss = st.session_state
@@ -113,7 +121,7 @@ def page_home():
         html(f"""<div class="hero-card">
         <div class="tags"><span>#균형성장</span><span>#글로벌분산</span><span>#위험균형</span></div>
         <div class="t">예시 · 성장형 · 1,000만원</div>
-        <div class="v">연 {perf['return']:.1%} 기대</div>
+        <div class="v">과거 연환산 {perf['return']:.1%}</div>
         <div class="g">변동성 {perf['vol']:.1%} · 최대 낙폭 {perf['mdd']:.1%}</div>
         <div class="bar">{bar}</div><div class="legend">{legend}</div></div>""")
 
@@ -229,7 +237,7 @@ def page_result():
       <h2>당신은 {profile} 투자자예요</h2>{note}
       <div class="kpis">
         <div class="kpi"><div class="l">총 투자금</div><div class="v">{won(ss.budget)}</div></div>
-        <div class="kpi"><div class="l">예상 연수익률</div><div class="v up">{perf['return']:+.1%}</div></div>
+        <div class="kpi"><div class="l">과거 연환산 수익률</div><div class="v up">{perf['return']:+.1%}</div></div>
         <div class="kpi"><div class="l">변동성 (위험)</div><div class="v">{perf['vol']:.1%}</div></div>
         <div class="kpi"><div class="l">최대 낙폭 (MDD)</div><div class="v down">{perf['mdd']:.1%}</div></div>
       </div></div>""")
@@ -277,15 +285,17 @@ def page_result():
         html(f"""<div class="hold-wrap"><table class="holdings"><thead><tr><th>상품</th><th>목표 비중</th><th>금액</th>
         <th>현재가</th><th>수량</th></tr></thead><tbody>{body}</tbody></table></div>""")
 
-    # 과거 성과: 예금처럼 안전한 단기채권에만 넣었을 때와 비교
+    st.caption('아래 과거 성과는 현재 데이터로 정한 비중을 같은 과거 기간에 적용한 사후 시뮬레이션이에요. 실제 당시 추천 성과가 아니며, 매일 비중 유지·현금 수익률 0%·거래비용 제외 가정이에요.')
+
+    # 과거 성과 비교
     safe = rc.safe_index(rets)
     start = perf['index'].index[0]
     end_pf, end_safe = ss.budget * perf['index'].iloc[-1] / 100, ss.budget * safe.iloc[-1] / 100
     with st.container(border=True):
         card_title(f'{rc.LOOKBACK_YEARS}년 전에 이 비중으로 시작했다면?',
-                   f'{start:%Y.%m}부터 지금까지 · 예금처럼 안전한 단기채권(통안채)에만 넣었을 때와 비교')
+                   f'{start:%Y.%m}부터 지금까지 · 단기채권 ETF에만 넣었을 때와 비교 · 원금보장 상품이 아님')
         fig3 = go.Figure()
-        fig3.add_scatter(x=safe.index, y=ss.budget * safe / 100 / 1e4, name='단기채권만 (예금 수준)',
+        fig3.add_scatter(x=safe.index, y=ss.budget * safe / 100 / 1e4, name='단기채권 ETF만',
                          line=dict(color='#98a2b3', width=2, dash='dot'),
                          hovertemplate='%{y:,.0f}만원<extra>단기채권만</extra>')
         fig3.add_scatter(x=perf['index'].index, y=ss.budget * perf['index'] / 100 / 1e4, name='추천 포트폴리오',
@@ -299,7 +309,7 @@ def page_result():
         st.plotly_chart(fig3, width='stretch', config={'displayModeBar': False})
         html(f"""<div class="compare">
           <div><span>추천 포트폴리오</span><b>{won(ss.budget)} → {won(end_pf)}</b><em class="up">{end_pf / ss.budget - 1:+.1%}</em></div>
-          <div><span>단기채권만 (예금 수준)</span><b>{won(ss.budget)} → {won(end_safe)}</b><em>{end_safe / ss.budget - 1:+.1%}</em></div>
+          <div><span>단기채권 ETF만</span><b>{won(ss.budget)} → {won(end_safe)}</b><em>{end_safe / ss.budget - 1:+.1%}</em></div>
           <div><span>가장 크게 떨어졌을 때</span><b>약 {won(abs(perf['mdd']) * ss.budget)} 손실</b><em class="down">{perf['mdd']:.1%}</em></div>
         </div>""")
 
@@ -338,7 +348,7 @@ def page_result():
       <div><b>왜 이 ETF를 이만큼 담나요?</b>
         <p>{why_weight}</p></div>
       <div><b>숫자는 어떻게 읽나요?</b>
-        <p><strong>예상 연수익률 {perf['return']:.1%}</strong>: 최근 {rc.LOOKBACK_YEARS}년 동안 이 비중이었다면 1년에 평균 이만큼 늘었어요.</p>
+        <p><strong>과거 연환산 수익률 {perf['return']:.1%}</strong>: 최근 {rc.LOOKBACK_YEARS}년 동안 이 비중이었다면 1년에 평균 이만큼 늘었어요.</p>
         <p><strong>변동성 {perf['vol']:.1%}</strong>: 1년 수익률이 평균에서 보통 이 정도 오르내려요. 클수록 위험해요.</p>
         <p><strong>최대 낙폭 {perf['mdd']:.1%}</strong>: 가장 나빴던 때 고점에서 이만큼 떨어졌어요.</p></div>
     </div>""")
@@ -354,6 +364,9 @@ def page_result():
         rows = [{'자산군': g, '상품': SHORT[n], '자산군 안 비중': f'{w:.1%}'}
                 for g, s in sleeves.items() for n, w in s.items() if w > 0.0005]
         st.dataframe(pd.DataFrame(rows), hide_index=True, width='stretch')
+
+    st.divider()
+    render_existing_editor(prices, weights, ss.budget)
 
     st.write('')
     _, b1, b2, b3, _ = st.columns([0.5, 0.7, 0.7, 0.7, 0.5])
