@@ -1,7 +1,7 @@
 """포트폴리오 추천 서비스 (초안)
 
 실행: streamlit run app.py
-화면은 3개예요: 첫 화면(home) → 진단(quiz, 한 화면에 한 문항) → 결과(result)
+화면: 첫 화면(home), 진단(quiz), 결과(result), 기업 분석(company_financials)
 계산은 모두 recommender.py 에 있고, 이 파일은 화면만 담당해요. 디자인은 assets/style.css.
 """
 import importlib
@@ -15,6 +15,7 @@ import streamlit.components.v1 as components
 
 import recommender as rc
 from c_integration import render_existing_editor
+from company_financials import render_company_financials
 
 importlib.reload(rc)   # recommender.py 를 고쳐도 서버를 다시 켜지 않고 바로 반영되게
 
@@ -89,6 +90,7 @@ def nav():
         st.button(APP_NAME, key='nav_logo', on_click=go_page, args=('home',))
         with st.container(key='navmenu', horizontal=True, horizontal_alignment='right', width='content', gap='medium'):
             for label, page, step, enabled in [('서비스 소개', 'home', 0, True),
+                                               ('기업 분석', 'company_financials', 0, True),
                                                ('투자성향 진단', 'quiz', 0, True),
                                                ('추천 결과', 'result', 0, done)]:
                 st.button(label, key=f'nav_{page}', on_click=go_page, args=(page, step), disabled=not enabled,
@@ -391,5 +393,10 @@ def scroll_top():
 # ── 실행 ─────────────────────────────────────────────────────────────
 scroll_top()
 nav()
-{'home': page_home, 'quiz': page_quiz, 'result': page_result}[ss.page]()
+{
+    'home': page_home,
+    'quiz': page_quiz,
+    'result': page_result,
+    'company_financials': render_company_financials,
+}[ss.page]()
 footer()
