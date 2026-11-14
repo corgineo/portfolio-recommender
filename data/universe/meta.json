@@ -1,0 +1,27 @@
+{
+  "run_at_kst": "2026-11-14T00:59+09:00",
+  "kr_last_session": "2026-11-13",
+  "us_last_session": "2026-11-12",
+  "price_end_kr_calendar": "2026-11-13",
+  "window_days": 20,
+  "top_n": 30,
+  "bond_n": 5,
+  "pool_per_market": 50,
+  "value_definition": "최근 20거래일(각 시장의 장 마감일) 일별 종가×거래량의 평균, 미국은 같은 날 USD/KRW 종가로 원화 환산",
+  "sources": {
+    "kr_list": "FinanceDataReader StockListing(\"KRX\"), StockListing(\"ETF/KR\")",
+    "us_list": "Nasdaq 공개 스크리너 api.nasdaq.com/api/screener/stocks (NASDAQ·NYSE·AMEX 전체)",
+    "us_etf": "공개 스크리너에 ETF 거래량이 없어 대표 ETF 43종(US_ETF_SEED)을 후보로 사용",
+    "kr_bond_etf": "국내 ETF 목록에서 이름에 채권·국고채·KOFR·CD금리 등이 들어간 ETF 중 거래대금 상위 20을 후보에 추가",
+    "prices": "FinanceDataReader DataReader (국내: KRX/네이버, 미국·환율: Yahoo Finance)",
+    "fx": "FinanceDataReader DataReader(\"USD/KRW\")",
+    "us_financials": "SEC EDGAR companyfacts API (10-K 연간)"
+  },
+  "failures": [],
+  "kr_extra": {
+    "run_at_kst": "2026-11-14T03:25+09:00",
+    "source": "data/extra_data/products.csv 의 국내 ETF(기본 8종 제외) · 가격·거래량 FinanceDataReader DataReader",
+    "count": 9,
+    "note": "거래대금 순위와 별개 목록. rank 는 통합 후보 안에 있을 때만 그 순위, 후보 밖이면 비움"
+  }
+}

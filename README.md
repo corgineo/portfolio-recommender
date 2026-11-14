@@ -2,7 +2,9 @@
 
 **사이트: https://first-portfolio.streamlit.app**
 
-예산 · 투자 기간 · 설문 5문항 → 투자성향 판정 → 자산배분 추천 → 결과 화면
+예산 · 상품 범위 · 설문 7문항(투자기간 포함) → 투자성향 판정 → 자산배분 추천 → 결과 화면 → 모의 포트폴리오 · 종목 분석
+
+> 2026-11-14 로컬 개선본(TODO 1~6): 변경 내용·데이터 기준·한계·테스트는 [docs/기말개선_변경사항.md](docs/기말개선_변경사항.md)를 보세요.
 
 ## 폴더 구성
 
@@ -17,6 +19,11 @@
 | `update_stock_data.py` | 연도별 팩터 종목 선정 → `data/factor_picks.csv`, 선정 종목 가격 → `data/stock_prices.csv` |
 | `data/etf_prices.csv` | 이미 받아 둔 가격 데이터 (2016-01-04 ~ 2026-10-30) |
 | `data/재무_2026.csv` | 강의 재무 데이터 (806종목, 2000~2025 회계연도) |
+| `service.py` | 화면용 계산 묶음 (상품 범위, 추천, 모의 포트폴리오 비교, 재무 표) |
+| `portfolio_editor.py` | 모의 포트폴리오 화면 (합계 100% 상한) |
+| `stock_detail.py` | 투자상품 목록(거래대금 순위)과 종목 분석 화면 |
+| `update_universe.py` | 국내·미국 거래대금 상위 종목·채권 ETF·환율·미국 재무 수집 → `data/universe/` |
+| `tests/` | 로직·화면 테스트 (pytest + Streamlit AppTest) |
 | `requirements.txt` | 설치할 패키지 목록 |
 
 ## 처음 한 번만: 설치
