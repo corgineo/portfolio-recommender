@@ -237,6 +237,8 @@ def build_portfolio(profile, cov_mat, picks=None, extra=None, budget=None, last_
     members = {g: [v['name'] for v in ETF_INFO.values() if v['group'] == g] + list(extra.get(g, []))
                for g in ['채권·예금', '주식', '대안투자']}
     mix = [v['name'] for v in ETF_INFO.values()] + list(extra.get('자산배분', []))
+    picks = list(picks or [])       # 못 사는 팩터 종목도 다른 상품처럼 하나씩 빼요 (1개는 남겨요)
+    pools = list(members.values()) + [mix, picks]
     dropped = []
 
     while True:
@@ -261,11 +263,11 @@ def build_portfolio(profile, cov_mat, picks=None, extra=None, budget=None, last_
         lack = {n: budget * w / last_prices[n] for n, w in weights.items()
                 if n != CASH and n in last_prices and budget * w < last_prices[n]}
         lack = {n: r for n, r in lack.items()
-                if any(n in m and len(m) > 1 for m in list(members.values()) + [mix])}
+                if any(n in m and len(m) > 1 for m in pools)}
         if not lack:
             break
         worst = min(lack, key=lack.get)
-        for m in list(members.values()) + [mix]:
+        for m in pools:
             if worst in m and len(m) > 1:
                 m.remove(worst)
         dropped.append(worst)
@@ -278,6 +280,20 @@ def current_picks(date=None):
     import factor
     picks = factor.load_picks()
     return factor.picks_on(picks, date if date is not None else picks['리밸런싱일'].max())
+
+
+def factor_products(names=None):
+    """팩터 종목 상품 정보 (이름 → 정보). base_products() 와 같은 모양"""
+    import factor
+    picks = factor.load_picks()
+    names = names if names is not None else current_picks()
+    last = picks.drop_duplicates('종목명', keep='last').set_index('종목명')
+    out = {}
+    for n in names:
+        code = last.loc[n, '종목코드']
+        out[n] = dict(name=n, code=code, short=n, desc='국내 개별주식 · 저평가 우량주', label=f'{n} ({code})',
+                      group='주식', kind='주식', market='KR', currency='KRW', source='FinanceDataReader', factor=True)
+    return out
 
 
 # ── 7. 예산 → 금액·수량 ────────────────────────────────────────────────

@@ -44,6 +44,8 @@ def test_each_profile_reaches_result(ans, typ, scope):
     assert f'당신은 {typ} 투자자예요' in t
     assert '이렇게 사면 돼요' in t and not at.error
     assert not any(w in t for w in BANNED), [w for w in BANNED if w in t]
+    assert '매년 이 방식으로 추천받았다면?' in t                      # 과거 성과 = 연 1회 리밸런싱 백테스트
+    assert ('저평가 우량주 5종목' in t) == (scope == 'wide')          # 팩터 종목은 넓은 범위에서만
 
 
 @pytest.mark.parametrize('budget', [100_000, 1_000_000_000])

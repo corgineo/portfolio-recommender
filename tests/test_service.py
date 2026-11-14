@@ -332,3 +332,46 @@ def test_price_stats_short_series():
     s2 = pd.Series(np.linspace(100, 110, 300), index=pd.bdate_range('2025-01-01', periods=300))
     st = svc.price_stats(s2)
     assert st['mdd'] == 0 and st['return'] > 0
+
+
+# ── 저평가 우량주(팩터 종목) · 연 1회 리밸런싱 백테스트 ─────────────────────────
+def test_wide_includes_factor_picks(scopes):
+    """넓은 범위: 주식 몫의 STOCK_SHARE 를 올해 팩터 종목에 똑같이 나눠요. 기본 범위에는 없어요."""
+    data = scopes['wide']
+    picks = rc.current_picks()
+    assert data['picks'] == picks and len(picks) == 5
+    res = svc.recommend(answers_for(28), 1_000_000_000, data)            # 예산이 커서 빠지는 종목 없음
+    expect = rc.PROFILE_TABLE[res['profile']]['주식'] / 100 * rc.STOCK_SHARE / len(picks)
+    for n in picks:
+        assert res['weights'][n] == pytest.approx(expect, rel=1e-6)
+        assert data['products'][n]['group'] == '주식' and data['products'][n]['market'] == 'KR'
+        assert data['prices'][n].iloc[-1] > 0                              # 마지막 날 가격이 있어요
+    base = svc.recommend(answers_for(28), 1_000_000_000, scopes['base'])
+    assert not set(picks) & set(base['weights'].index)
+
+
+def test_small_budget_drops_unaffordable_picks(scopes):
+    """1주도 못 사는 팩터 종목은 빼고 다시 나누되, 한 종목은 남겨요"""
+    data = scopes['wide']
+    res = svc.recommend(answers_for(0), 100_000, data)
+    held = [n for n in data['picks'] if n in res['weights'].index]
+    assert len(held) >= 1
+    assert set(data['picks']) - set(held) <= set(res['dropped'])
+
+
+@pytest.mark.parametrize('use_factor', [True, False])
+def test_backtest_summary(use_factor):
+    import factor
+    out = svc.backtest_summary('성장형', use_factor)
+    navs = out['navs']
+    assert list(navs.columns[:2]) == ['추천 방식', '단기채권만']
+    assert ('추천(ETF만)' in navs.columns) == use_factor
+    assert np.allclose(navs.iloc[0], out['init']) and not navs.isna().any().any()
+    first = factor.load_picks()['리밸런싱일'].min()
+    assert out['start'] == first and out['end'] == rc.load_prices().index[-1]
+    assert out['yearly'].index[0] == first.year and out['yearly'].index[-1] == out['end'].year
+    assert (out['picks'] is not None) == use_factor
+    if not use_factor:                                                     # ETF만이면 지표가 ETF만 버전과 같아요
+        import backtest as bt
+        ref = bt.compare('성장형')['perf']['추천(ETF만)']
+        pd.testing.assert_series_equal(out['perf']['추천 방식'], ref, check_names=False)

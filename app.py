@@ -49,6 +49,11 @@ def get_result(answers, budget, scope):
     return svc.recommend(list(answers), budget, get_scope(scope))
 
 
+@st.cache_data(show_spinner='과거 성과를 계산하고 있어요...')
+def get_backtest(profile, use_factor):
+    return svc.backtest_summary(profile, use_factor)
+
+
 try:
     BASE = get_scope('base')
 except FileNotFoundError:
@@ -296,8 +301,12 @@ def page_result():
         go_page('quiz', ss.ans.index(None) + 1)
         st.rerun()
     res, data = current()
-    judge, profile, perf, weights = res['judge'], res['profile'], res['perf'], res['weights']
+    judge, profile, weights = res['judge'], res['profile'], res['weights']
     products, colors, budget = data['products'], res['colors'], ss.budget
+    use_factor = bool(data.get('picks'))
+    bt = get_backtest(profile, use_factor)            # 매년 4월 다시 추천했다면 (백테스트)
+    perf = bt['perf']['추천 방식']
+    since = f"{bt['start']:%Y.%m}~"
 
     note = ''
     if judge['short_term']:
@@ -311,9 +320,9 @@ def page_result():
       <div class="desc">{judge['type_desc']} ({lo}~{hi}점) · <b>{profile}</b> 자산배분을 추천해요</div>{note}
       <div class="kpis">
         <div class="kpi"><div class="l">총 투자금</div><div class="v">{won(budget)}</div></div>
-        <div class="kpi"><div class="l">과거 연환산 수익률</div><div class="v up">{perf['return']:+.1%}</div></div>
-        <div class="kpi"><div class="l">변동성 (위험)</div><div class="v">{perf['vol']:.1%}</div></div>
-        <div class="kpi"><div class="l">최대 낙폭 (MDD)</div><div class="v down">{perf['mdd']:.1%}</div></div>
+        <div class="kpi"><div class="l">과거 연평균 수익률 ({since})</div><div class="v up">{perf['CAGR']:+.1%}</div></div>
+        <div class="kpi"><div class="l">변동성 (위험)</div><div class="v">{perf['변동성(연율화)']:.1%}</div></div>
+        <div class="kpi"><div class="l">최대 낙폭 (MDD)</div><div class="v down">{perf['MDD']:.1%}</div></div>
       </div></div>""")
 
     with st.container(key='res_actions', horizontal=True, gap='small'):
@@ -367,24 +376,23 @@ def page_result():
                             key='res_detail_pick')
         d2.button('분석 보기', key='res_detail_go', width='stretch', on_click=open_detail, args=(pick, 'result'))
 
-    st.caption('아래 과거 성과는 지금 정한 비중을 같은 과거 기간에 적용한 모의 계산이에요. 실제 그때의 추천 성과가 아니며, '
-               '매일 비중 유지·현금 수익률 0%·거래비용 제외 가정이에요.')
-
-    # 과거 성과 비교
-    safe = rc.safe_index(data['rets'])
-    start = perf['index'].index[0]
-    end_pf, end_safe = budget * perf['index'].iloc[-1] / 100, budget * safe.iloc[-1] / 100
+    # 과거 성과: 매년 4월 그때까지의 데이터로 같은 규칙을 다시 적용한 백테스트
+    navs = bt['navs'] / bt['init']
+    pf, safe = navs['추천 방식'], navs['단기채권만']
+    end_pf, end_safe = budget * pf.iloc[-1], budget * safe.iloc[-1]
+    rule = '국내 ETF 8종 + 그해 저평가 우량주 5종목' if use_factor else '국내 ETF 8종'
     with st.container(border=True):
-        card_title(f'{rc.LOOKBACK_YEARS}년 전에 이 비중으로 시작했다면?',
-                   f'{start:%Y.%m}부터 지금까지 · 단기채권 ETF에만 넣었을 때와 비교 · 원금보장 상품이 아님')
+        card_title(f'{bt["start"]:%Y년 %m월}부터 매년 이 방식으로 추천받았다면?',
+                   f'{bt["start"]:%Y.%m}~{bt["end"]:%Y.%m} · 매년 4월, 그때까지 알 수 있던 데이터로만 비중을 다시 정했어요 · '
+                   '단기채권 ETF에만 넣었을 때와 비교 · 원금보장 상품이 아님')
         yf = ',.1f' if budget < 2_000_000 else ',.0f'      # 예산이 작으면 눈금이 같은 숫자로 겹치지 않게 소수 한 자리
         fig3 = go.Figure()
-        fig3.add_scatter(x=safe.index, y=budget * safe / 100 / 1e4, name='단기채권 ETF만',
+        fig3.add_scatter(x=safe.index, y=budget * safe / 1e4, name='단기채권 ETF만',
                          line=dict(color='#98a2b3', width=2, dash='dot'),
                          hovertemplate='%{y:' + yf + '}만원<extra>단기채권만</extra>')
-        fig3.add_scatter(x=perf['index'].index, y=budget * perf['index'] / 100 / 1e4, name='추천 포트폴리오',
+        fig3.add_scatter(x=pf.index, y=budget * pf / 1e4, name='추천 방식',
                          line=dict(color='#2563eb', width=3), fill='tonexty', fillcolor='rgba(37,99,235,.08)',
-                         hovertemplate='%{y:' + yf + '}만원<extra>추천 포트폴리오</extra>')
+                         hovertemplate='%{y:' + yf + '}만원<extra>추천 방식</extra>')
         fig3.update_layout(height=300, margin=dict(t=10, b=0, l=0, r=0), paper_bgcolor='rgba(0,0,0,0)',
                            plot_bgcolor='rgba(0,0,0,0)', font=dict(family='Pretendard', color='#475467'),
                            legend=dict(orientation='h', y=1.12, x=0), hovermode='x unified',
@@ -392,10 +400,26 @@ def page_result():
                            xaxis=dict(showgrid=False))
         st.plotly_chart(fig3, width='stretch', config={'displayModeBar': False})
         html(f"""<div class="compare">
-          <div><span>추천 포트폴리오</span><b>{won(budget)} → {won(end_pf)}</b><em class="up">{end_pf / budget - 1:+.1%}</em></div>
+          <div><span>추천 방식</span><b>{won(budget)} → {won(end_pf)}</b><em class="up">{end_pf / budget - 1:+.1%}</em></div>
           <div><span>단기채권 ETF만</span><b>{won(budget)} → {won(end_safe)}</b><em>{end_safe / budget - 1:+.1%}</em></div>
-          <div><span>가장 크게 떨어졌을 때</span><b>약 {won(abs(perf['mdd']) * budget)} 손실</b><em class="down">{perf['mdd']:.1%}</em></div>
+          <div><span>가장 크게 떨어졌을 때</span><b>약 {won(abs(perf['MDD']) * budget)} 손실</b><em class="down">{perf['MDD']:.1%}</em></div>
         </div>""")
+        st.caption(f'계산에 쓴 상품: {rule}. 거래대금 상위 종목은 지금 순위라 과거 시점에는 고를 수 없어서 빼고 계산했어요. '
+                   f'사고팔 때 비용 {bt["bp"]:.1%}, 현금은 연 {bt["rf"]:.0%} 예금 금리로 불어난다고 봤어요.')
+        with st.expander('연도별 수익률 · 해마다 고른 종목 보기'):
+            yearly = bt['yearly'].map(lambda v: f'{v:+.1%}')
+            yearly.index = [f'{y}년' for y in yearly.index]
+            st.dataframe(yearly, width='stretch')
+            p = bt['perf']
+            table = pd.DataFrame({'연평균 수익률': p.loc['CAGR'], '변동성': p.loc['변동성(연율화)'],
+                                  '최대 낙폭': p.loc['MDD'], '샤프비율': p.loc['샤프비율']}).T
+            st.dataframe(table.apply(lambda r: r.map(lambda v: f'{v:.2f}' if r.name == '샤프비율' else f'{v:.1%}'), axis=1),
+                         width='stretch')
+            if use_factor:
+                st.caption("'추천(ETF만)'은 저평가 우량주 없이 국내 ETF 8종만 썼을 때예요. "
+                           '샤프비율은 (연평균 수익률 − 예금 금리) ÷ 변동성으로, 클수록 위험 대비 수익이 좋아요.')
+                picks = bt['picks'].rename_axis('리밸런싱일').rename('고른 종목 (저PER·저PBR·고ROE 순위합 상위 5)')
+                st.dataframe(picks, width='stretch')
 
     # 추천 근거
     t = rc.PROFILE_TABLE[profile]
@@ -422,6 +446,10 @@ def page_result():
     if 'OIL' in alt and 'USD' in alt:
         why_weight += (f' 예를 들어 대안투자에서 원유(1년 변동성 {vol["OIL"]:.0%})는 {alt["OIL"]:.0%}, '
                        f'달러(변동성 {vol["USD"]:.0%})는 {alt["USD"]:.0%}를 담았어요.')
+    held_picks = [n for n in data.get('picks', []) if n in weights.index]
+    if held_picks:
+        why_weight += (f' 주식 몫의 절반은 이익에 비해 싸고(PER·PBR이 낮고) 돈을 잘 버는(ROE가 높은) 국내 기업 '
+                       f'{", ".join(held_picks)}에 똑같이 나눠 담았어요. 매년 4월 새 재무제표로 다시 골라요.')
 
     html(f"""<div class="section-title left"><div class="k">추천 근거</div><h2>왜 이렇게 추천했나요?</h2></div>
     <div class="how">
@@ -436,9 +464,9 @@ def page_result():
       <div><b>왜 이 상품을 이만큼 담나요?</b>
         <p>{why_weight}</p></div>
       <div><b>숫자는 어떻게 읽나요?</b>
-        <p><strong>과거 연환산 수익률 {perf['return']:.1%}</strong>: 최근 {rc.LOOKBACK_YEARS}년 동안 이 비중이었다면 1년에 평균 이만큼 늘었어요.</p>
-        <p><strong>변동성 {perf['vol']:.1%}</strong>: 1년 수익률이 평균에서 보통 이 정도 오르내려요. 클수록 위험해요.</p>
-        <p><strong>최대 낙폭 {perf['mdd']:.1%}</strong>: 가장 나빴던 때 고점에서 이만큼 떨어졌어요.</p></div>
+        <p><strong>과거 연평균 수익률 {perf['CAGR']:.1%}</strong>: {bt['start']:%Y년 %m월}부터 매년 이 방식으로 다시 추천받아 투자했다면 1년에 평균 이만큼 늘었어요.</p>
+        <p><strong>변동성 {perf['변동성(연율화)']:.1%}</strong>: 1년 수익률이 평균에서 보통 이 정도 오르내려요. 클수록 위험해요.</p>
+        <p><strong>최대 낙폭 {perf['MDD']:.1%}</strong>: 가장 나빴던 때 고점에서 이만큼 떨어졌어요.</p></div>
     </div>""")
     with st.expander('계산 방법 자세히 보기'):
         st.markdown(f"""
@@ -448,7 +476,9 @@ def page_result():
   {'· 목표: 변동성 √(wᵀΣw) 최소화' if res['model'] == 'MVP' else '· 목표: 위험기여도 RCᵢ = wᵢ × (Σw)ᵢ / σₚ 를 모든 상품에서 σₚ / n 으로 같게'}
 - **자산배분 몫**: 국내 ETF 8종 전체를 위험균형으로 섞은 묶음
 - **미국 상품**: 미국 종가 × 같은 날 원/달러 환율로 원화 환산, 한국 장 마감 시점에 이미 알려진 전날 미국 종가만 사용
-- **지표**: 연수익률 = 일간 평균 × 240, 변동성 = 일간 표준편차 × √240, MDD = 누적성과 ÷ 그때까지 최고점 − 1 의 최솟값
+{'- **저평가 우량주**: 직전 회계연도 재무와 4월 첫 거래일 주가로 PER·PBR(낮을수록)·ROE(높을수록) 순위를 더해 상위 5종목, 주식 몫의 50%를 똑같이 나눔' if use_factor else ''}
+- **과거 성과(백테스트)**: 매년 4월 첫 거래일에 그때까지의 3년 데이터로 비중을 다시 계산, 그 사이에는 가격 따라 비중이 변하게 두고, 다시 맞출 때 사고판 금액의 {bt['bp']:.1%}를 비용으로 뺌
+- **지표**: 연평균 수익률 = (마지막 값 ÷ 처음 값)^(1/년수) − 1, 변동성 = 일간 표준편차 × √240, MDD = 누적성과 ÷ 그때까지 최고점 − 1 의 최솟값
 """)
         rows = [{'자산군': g, '상품': products[n]['short'], '자산군 안 비중': f'{w:.1%}'}
                 for g, s in res['sleeves'].items() for n, w in s.items() if w > 0.0005]

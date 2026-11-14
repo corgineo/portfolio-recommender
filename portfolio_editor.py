@@ -90,7 +90,7 @@ def render(res, data, ss, go_page, open_detail):
     colors.update(res['colors'])
 
     # 고를 수 있는 상품: 지금 상품 범위에서 가격이 있는 것 (현금 제외)
-    choices = [n for n in rc.ETF_NAMES] + [n for v in data['extra'].values() for n in v]
+    choices = [n for n in rc.ETF_NAMES] + [n for v in data['extra'].values() for n in v] + list(data.get('picks', []))
     choices = [n for n in choices if n in prices and pd.notna(last.get(n))]
     order = {n: i for i, n in enumerate(choices)}
     choices.sort(key=lambda n: (GROUP_ORDER.index(products[n]['group']) if products[n]['group'] in GROUP_ORDER else 9,

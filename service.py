@@ -25,19 +25,22 @@ def load_scope(scope='wide'):
     products = rc.base_products()
     if scope == 'base':
         rets, _, cov = rc.model_inputs(base_prices)
-        return dict(scope='base', prices=base_prices, rets=rets, cov=cov, products=products, extra={},
+        return dict(scope='base', prices=base_prices, rets=rets, cov=cov, products=products, extra={}, picks=[],
                     universe=None, as_of=base_prices.index[-1], fx=None, us_as_of=None)
-    prices = universe['prices']
+    picks = rc.current_picks()                           # 저PER·저PBR·고ROE 순위합 상위 종목 (factor.py)
+    stock = pd.read_csv(rc.STOCK_FILE, index_col=0, parse_dates=True)[picks]
+    prices = universe['prices'].drop(columns=picks, errors='ignore').join(stock)
     extra = rc.universe_extra(universe, prices)
     names = rc.ETF_NAMES + [n for v in extra.values() for n in v]
     rets, _, cov = rc.model_inputs(prices, names=names)
     products.update(rc.universe_products(universe))
+    products.update(rc.factor_products(picks))
     fx = universe['fx']
     us_as_of = universe['meta'].get('us_last_session')
     fx_used = None
     if fx is not None and us_as_of:
         fx_used = float(fx.loc[:pd.Timestamp(us_as_of)].iloc[-1])
-    return dict(scope='wide', prices=prices, rets=rets, cov=cov, products=products, extra=extra,
+    return dict(scope='wide', prices=prices, rets=rets, cov=cov, products=products, extra=extra, picks=picks,
                 universe=universe, as_of=prices.index[-1], fx=fx_used, us_as_of=us_as_of)
 
 
@@ -55,7 +58,7 @@ def recommend(answers, budget, data):
     prices = data['prices']
     last = prices.ffill().iloc[-1]
     if data['scope'] == 'wide':
-        weights, detail, sleeves = rc.build_portfolio(profile, data['cov'], extra=data['extra'],
+        weights, detail, sleeves = rc.build_portfolio(profile, data['cov'], picks=data['picks'], extra=data['extra'],
                                                       budget=budget, last_prices=last)
     else:
         weights, detail, sleeves = rc.build_portfolio(profile, data['cov'])
@@ -68,6 +71,30 @@ def recommend(answers, budget, data):
     return dict(judge=judge, profile=profile, weights=weights, detail=detail, sleeves=sleeves, perf=perf,
                 alloc=alloc, colors=colors, tags=tags, group_w=group_w, dropped=detail.attrs.get('dropped', []),
                 model=rc.MODEL_BY_PROFILE[profile])
+
+
+# ── 결과 화면: 연 1회 리밸런싱 백테스트 ───────────────────────────────────
+def backtest_summary(profile, use_factor):
+    """매년 4월 그때까지의 데이터로 추천 규칙을 다시 적용했을 때 (backtest.py)
+
+    use_factor: 팩터 종목을 담는 범위면 True. 거래대금 상위 종목은 지금 순위라 과거에 고를 수 없어서 빼고,
+    국내 ETF 8종(+ 그해 팩터 종목)으로 계산해요.
+    반환: navs(추천 방식·단기채권 누적가치, 시작 100), perf(지표), yearly(연도별 수익률), picks(연도별 종목)
+    """
+    import backtest as bt
+    import factor
+    res = bt.compare(profile)
+    main = '추천(팩터 종목 포함)' if use_factor else '추천(ETF만)'
+    cols = [main, '단기채권만'] + (['추천(ETF만)'] if use_factor else [])
+    rename = {main: '추천 방식'}
+    picks = None
+    if use_factor:
+        p = factor.load_picks()
+        picks = p.groupby(p['리밸런싱일'].dt.date)['종목명'].apply(', '.join)
+    navs = res['navs'][cols].rename(columns=rename)
+    return dict(navs=navs, perf=res['perf'][cols].rename(columns=rename),
+                yearly=res['yearly'][cols].rename(columns=rename), picks=picks,
+                start=navs.index[0], end=navs.index[-1], bp=bt.BP, rf=bt.RF, init=bt.INIT)
 
 
 # ── 모의 포트폴리오: 과거 성과 비교 ───────────────────────────────────────
