@@ -18,16 +18,62 @@ from c_integration import render_existing_editor
 
 importlib.reload(rc)   # recommender.py 를 고쳐도 서버를 다시 켜지 않고 바로 반영되게
 
+DONUT_MIN = 0.03                  # 도넛 차트에서 이 비중 미만 상품은 '기타'로 묶음
 APP_NAME = '첫 포트폴리오'          # 서비스 이름 (팀에서 정하면 여기만 바꾸면 돼요)
 COLOR = {'KBOND': '#2563eb', 'USD': '#12b76a', 'CASH': '#98a2b3', 'KOSPI200': '#f04438', 'SP500': '#7a5af8',
-         'TOPIX': '#ee46bc', 'CSI300': '#f79009', 'EUROSTOXX50': '#06aed4', 'OIL': '#875bf7'}
+         'TOPIX': '#ee46bc', 'CSI300': '#f79009', 'EUROSTOXX50': '#06aed4', 'OIL': '#875bf7',
+         # 추가 ETF 12종 (같은 자산군은 비슷한 계열 색)
+         'NASDAQ100': '#9e77ed', 'DIVIDEND': '#fda29b', 'GOLD': '#eaaa08', 'REIT': '#0e9384',
+         'KTB3Y': '#3b82f6', 'SHORTBOND': '#60a5fa', 'CORPBOND': '#1d4ed8', 'KTB10Y': '#0ea5e9',
+         'UST10Y': '#1e3a8a', 'UST30Y_H': '#6366f1', 'MIX_K200_UST': '#a78bfa', 'MIX_DIVIDEND': '#c4b5fd'}
 GROUP_COLOR = {'채권·예금': '#2563eb', '주식': '#f04438', '대안투자': '#12b76a', '자산배분': '#7a5af8', '유동성': '#98a2b3'}
 SHORT = {'KOSPI200': 'KODEX 200', 'SP500': 'TIGER 미국S&P500선물', 'TOPIX': 'TIGER 일본TOPIX', 'CSI300': 'TIGER 차이나CSI300',
-         'EUROSTOXX50': 'TIGER 유로스탁스50', 'KBOND': 'KOSEF 통안채1년', 'OIL': 'TIGER 원유선물', 'USD': 'KOSEF 미국달러선물',
-         'CASH': '현금 (CMA·예금)'}
+         'EUROSTOXX50': 'TIGER 유로스탁스50', 'KBOND': 'KIWOOM 통안채1년', 'OIL': 'TIGER 원유선물', 'USD': 'KIWOOM 미국달러선물',
+         'CASH': '현금 (CMA·예금)',
+         'NASDAQ100': 'TIGER 미국나스닥100', 'DIVIDEND': 'PLUS 고배당주', 'GOLD': 'KODEX 골드선물(H)', 'REIT': 'TIGER 리츠부동산인프라',
+         'KTB3Y': 'KODEX 국고채3년', 'SHORTBOND': 'KODEX 단기채권', 'CORPBOND': 'RISE 중기우량회사채', 'KTB10Y': 'KIWOOM 국고채10년',
+         'UST10Y': 'TIGER 미국채10년선물', 'UST30Y_H': 'KODEX 미국30년국채울트라선물(H)',
+         'MIX_K200_UST': 'KODEX 200미국채혼합50', 'MIX_DIVIDEND': 'PLUS 고배당주채권혼합'}
 DESC = {'KOSPI200': '국내 대형주 200', 'SP500': '미국 주식', 'TOPIX': '일본 주식', 'CSI300': '중국 주식',
-        'EUROSTOXX50': '유럽 주식', 'KBOND': '국내 단기채권', 'OIL': '원유', 'USD': '미국 달러', 'CASH': '언제든 꺼내 쓸 돈'}
+        'EUROSTOXX50': '유럽 주식', 'KBOND': '국내 단기채권', 'OIL': '원유', 'USD': '미국 달러', 'CASH': '언제든 꺼내 쓸 돈',
+        'NASDAQ100': '미국 성장주', 'DIVIDEND': '국내 배당주', 'GOLD': '금', 'REIT': '리츠·부동산',
+        'KTB3Y': '국내 국고채 3년', 'SHORTBOND': '국내 단기채권', 'CORPBOND': '국내 회사채', 'KTB10Y': '국내 국고채 10년',
+        'UST10Y': '미국 장기국채(환노출)', 'UST30Y_H': '미국 장기국채(환헤지)',
+        'MIX_K200_UST': '주식·채권 혼합', 'MIX_DIVIDEND': '배당주·채권 혼합'}
 CODE = {v['name']: k for k, v in rc.ETF_INFO.items()}
+
+
+# 개별 종목(팩터 종목·거래대금 상위 종목)은 이름이 많아서 딕셔너리에 없으면 products.csv 로 자동으로 채워요
+_PALETTE = ['#b42318', '#c11574', '#dd2590', '#ef6820', '#b54708', '#ca8504', '#4ca30d', '#0e7090', '#7f56d9', '#444ce7']
+_CAT = rc.STOCK_CATALOG if rc.STOCK_CATALOG is not None else pd.DataFrame(columns=['code', 'name', 'sub_class', 'currency'])
+
+
+def _factor_codes():
+    try:
+        import factor
+        p = factor.load_picks()
+        return dict(zip(p['종목명'], p['종목코드']))
+    except Exception:
+        return {}
+
+
+_FACTOR_CODE = _factor_codes()
+
+
+class Fallback(dict):
+    def __init__(self, data, fn):
+        super().__init__(data)
+        self.fn = fn
+
+    def __missing__(self, key):
+        return self.fn(key)
+
+
+COLOR = Fallback(COLOR, lambda n: _PALETTE[sum(map(ord, str(n))) % len(_PALETTE)])
+SHORT = Fallback(SHORT, lambda n: _CAT.at[n, 'name'] if n in _CAT.index else n)
+DESC = Fallback(DESC, lambda n: ((_CAT.at[n, 'sub_class'] + (' · 원화 환산' if _CAT.at[n, 'currency'] == 'USD' else ''))
+                                 if n in _CAT.index else '개별 종목 (가치 팩터)'))
+CODE = Fallback(CODE, lambda n: _CAT.at[n, 'code'] if n in _CAT.index else _FACTOR_CODE.get(n, ''))
 
 st.set_page_config(page_title=APP_NAME, page_icon='📊', layout='wide', initial_sidebar_state='collapsed')
 style_file = Path(__file__).parent / 'assets' / 'style.css'
@@ -39,7 +85,7 @@ else:
 
 @st.cache_data
 def get_data():
-    prices = rc.load_prices()
+    prices = rc.load_prices(with_stocks=True, with_candidates=True)     # ETF 20종 + 팩터 종목 + 거래대금 상위 개별주
     rets, avg_returns, cov_mat = rc.model_inputs(prices)
     return prices, rets, avg_returns, cov_mat
 
@@ -97,13 +143,13 @@ def nav():
 
 def footer():
     html(f"""<div class="foot"><b>{APP_NAME}</b> · 데이터처리프로그래밍 기말 팀 프로젝트 (초안)<br>
-    데이터: 국내 상장 ETF 8종 종가 ({prices.index[0]:%Y.%m.%d} ~ {prices.index[-1]:%Y.%m.%d}) · FinanceDataReader<br>
+    데이터: ETF 20종·개별 주식 종가 ({prices.index[0]:%Y.%m.%d} ~ {prices.index[-1]:%Y.%m.%d}) · FinanceDataReader<br>
     교육용 시뮬레이션이며 투자 권유가 아니에요. 과거 수익률이 미래 수익을 보장하지 않아요.</div>""")
 
 
 # ── 1. 첫 화면 ───────────────────────────────────────────────────────
 def page_home():
-    w, d, _ = rc.build_portfolio('성장형', cov_mat)
+    w, d, _ = rc.build_portfolio('성장형', cov_mat, rc.choose_picks('성장형', prices, 10_000_000))
     perf = rc.performance(w, rets)
     bar = ''.join(f'<i style="width:{v * 100:.1f}%;background:{COLOR[n]}"></i>' for n, v in w.items())
     legend = ''.join(f'<div><span class="dot" style="background:{COLOR[n]}"></span>{DESC[n]}<b>{v:.0%}</b></div>'
@@ -131,8 +177,8 @@ def page_home():
         <p>투자 경험, 목적, 손실을 견디는 정도를 물어 안정형부터 공격형까지 4가지로 나눠요.</p></div>
       <div class="feature"><div class="ic">📐</div><h3>포트폴리오 이론으로 계산</h3>
         <p>최소분산·위험균형 모형으로 위험을 고르게 나눠요. 감이 아니라 공분산 행렬로 비중을 정해요.</p></div>
-      <div class="feature"><div class="ic">🌏</div><h3>ETF 8종으로 세계 분산</h3>
-        <p>한국·미국·일본·중국·유럽 주식과 채권, 달러, 원유를 1주 단위로 살 수 있게 알려드려요.</p></div>
+      <div class="feature"><div class="ic">🌏</div><h3>ETF 20종으로 세계 분산</h3>
+        <p>한국·미국·일본·중국·유럽 주식과 국내외 채권, 금, 리츠, 달러, 원유를 1주 단위로 살 수 있게 알려드려요.</p></div>
     </div>
     <div class="section-title"><div class="k">추천 과정</div><h2>이렇게 추천해요</h2></div>
     <div class="steps">
@@ -223,7 +269,8 @@ def page_result():
 
     judge = rc.judge_profile(ss.ans, ss.period)
     profile = judge['profile']
-    weights, detail, sleeves = rc.build_portfolio(profile, cov_mat)
+    picks = rc.choose_picks(profile, prices, ss.budget)             # 개별 종목: 반은 팩터, 반은 거래대금 상위
+    weights, detail, sleeves = rc.build_portfolio(profile, cov_mat, picks)
     perf = rc.performance(weights, rets)
     alloc = rc.allocate_budget(weights, prices, ss.budget)
     tags = rc.hashtags(profile, ss.period, weights, detail)
@@ -245,12 +292,23 @@ def page_result():
     c1, c2 = st.columns([1, 1], gap='medium')
     with c1:
         with st.container(border=True):
-            card_title('상품별 비중', '어떤 ETF를 얼마나 담는지')
-            fig = go.Figure(go.Pie(labels=[SHORT[n] for n in weights.index], values=(weights * 100).round(1),
-                                   hole=0.62, sort=False, marker=dict(colors=[COLOR[n] for n in weights.index],
-                                                                       line=dict(color='#fff', width=2)),
+            card_title('상품별 비중', '어떤 ETF·종목을 얼마나 담는지')
+            # 비중이 작은 상품(3% 미만)은 도넛에서 '기타'로 묶어요 (자세한 비중은 아래 표에 다 있어요)
+            big = weights[weights >= DONUT_MIN]
+            small = weights[weights < DONUT_MIN]
+            labels = [SHORT[n] for n in big.index]
+            values = list((big * 100).round(1))
+            colors = [COLOR[n] for n in big.index]
+            hover = [''] * len(big)
+            if len(small):
+                labels.append(f'기타 {len(small)}종')
+                values.append(round(small.sum() * 100, 1))
+                colors.append('#d0d5dd')
+                hover.append('<br>' + '<br>'.join(f'{SHORT[n]} {v:.1%}' for n, v in small.items()))
+            fig = go.Figure(go.Pie(labels=labels, values=values, customdata=hover,
+                                   hole=0.62, sort=False, marker=dict(colors=colors, line=dict(color='#fff', width=2)),
                                    texttemplate='%{value:.0f}%', textfont=dict(size=12),
-                                   hovertemplate='%{label}<br>%{value:.1f}%<extra></extra>'))
+                                   hovertemplate='%{label}<br>%{value:.1f}%%{customdata}<extra></extra>'))
             fig.update_layout(height=400, margin=dict(t=10, b=10, l=10, r=10), showlegend=True,
                               legend=dict(font=dict(size=12), orientation='h', x=0.5, xanchor='center', y=-0.05),
                               paper_bgcolor='rgba(0,0,0,0)', font=dict(family='Pretendard'),
@@ -272,7 +330,7 @@ def page_result():
     # 보유 목록
     body = ''
     for _, r in alloc.iterrows():
-        name = next(n for n, lbl in rc.NAME_TO_LABEL.items() if lbl == r['상품'])
+        name = next((n for n, lbl in rc.NAME_TO_LABEL.items() if lbl == r['상품']), r['상품'])
         cash = name == rc.CASH
         code = '' if cash else f' · {CODE[name]}'
         price = '' if cash else f'{r["현재가(원)"]:,.0f}원'
@@ -333,8 +391,8 @@ def page_result():
     else:
         why_weight = ('모든 상품이 전체 위험을 똑같이 나눠 지도록 했어요. 많이 흔들리는 상품은 적게, '
                       '덜 흔들리는 상품은 많이 담아요.')
-    why_weight += (f' 예를 들어 대안투자에서 원유(1년 변동성 {vol["OIL"]:.0%})는 {alt["OIL"]:.0%}, '
-                   f'달러(변동성 {vol["USD"]:.0%})는 {alt["USD"]:.0%}를 담았어요.')
+    alt_txt = ', '.join(f'{DESC[n]}(1년 변동성 {vol[n]:.0%})는 {w:.0%}' for n, w in alt.sort_values(ascending=False).items())
+    why_weight += f' 예를 들어 대안투자에서는 {alt_txt}를 담았어요.'
     note_short = ' 투자 기간이 1년 미만이라 한 단계 보수적으로 바꿨어요.' if judge['adjusted'] else ''
 
     html(f"""<div class="section-title left"><div class="k">추천 근거</div><h2>왜 이렇게 추천했나요?</h2></div>
@@ -358,7 +416,9 @@ def page_result():
 - **포트폴리오 변동성**: √(wᵀΣw)
 - **{rc.MODEL_NAME[model]}**: `scipy.optimize.minimize(method='SLSQP')`, 비중 합 = 1, 0 ≤ 비중 ≤ 1 (공매도 없음)
   {'· 목표: 변동성 √(wᵀΣw) 최소화' if model == 'MVP' else '· 목표: 위험기여도 RCᵢ = wᵢ × (Σw)ᵢ / σₚ 를 모든 상품에서 σₚ / n 으로 같게'}
-- **자산배분 몫**: 8종 전체를 위험균형으로 섞은 묶음
+- **자산배분 몫**: 주식·채권 혼합형 ETF 2종을 위험균형으로 섞은 묶음
+- **개별 종목 몫**: 주식 몫의 절반을 개별 종목에 같은 비중으로 담아요. 개수는 ‘종목당 3% 이상’이 되도록 정하고(최대 10개, 안정형은 0개), 절반은 가치 팩터(저PER·저PBR·고ROE) 종목, 절반은 최근 거래대금 상위 종목이에요. 예산으로 1주도 못 사는 종목은 다음 순위로 넘겨요.
+- **최소 비중**: 최종 비중이 3% 미만인 상품은 빼고 같은 자산군의 다른 상품에 나눠 담아요. 그래서 수업 모형의 비중 그대로가 아닐 수 있어요.
 - **지표**: 연수익률 = 일간 평균 × 240, 변동성 = 일간 표준편차 × √240, MDD = 누적성과 ÷ 그때까지 최고점 − 1 의 최솟값
 """)
         rows = [{'자산군': g, '상품': SHORT[n], '자산군 안 비중': f'{w:.1%}'}

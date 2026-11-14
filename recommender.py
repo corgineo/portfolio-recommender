@@ -12,16 +12,29 @@ import scipy.optimize as sco
 DAYS = 240  # 1년 거래일 수 (강의 기준: 연율화할 때 × 240, 변동성은 × √240)
 LOOKBACK_YEARS = 3  # 기대수익률·공분산을 계산할 최근 기간
 
-# ── 1. 투자 상품: 강의 ETF 자산배분 사례의 8종 ─────────────────────────────
+# ── 1. 투자 상품: 강의 ETF 자산배분 사례의 8종 + 빈틈을 채운 12종 (총 20종) ─────────────────────────────
 ETF_INFO = {
     '069500': {'name': 'KOSPI200', 'label': 'KODEX 200 (국내 대형주)', 'group': '주식'},
     '143850': {'name': 'SP500', 'label': 'TIGER 미국S&P500선물 (미국 주식)', 'group': '주식'},
     '195920': {'name': 'TOPIX', 'label': 'TIGER 일본TOPIX (일본 주식)', 'group': '주식'},
     '192090': {'name': 'CSI300', 'label': 'TIGER 차이나CSI300 (중국 주식)', 'group': '주식'},
     '195930': {'name': 'EUROSTOXX50', 'label': 'TIGER 유로스탁스50 (유럽 주식)', 'group': '주식'},
-    '122260': {'name': 'KBOND', 'label': 'KOSEF 통안채1년 (국내 단기채권)', 'group': '채권·예금'},
+    '122260': {'name': 'KBOND', 'label': 'KIWOOM 통안채1년 (국내 단기채권)', 'group': '채권·예금'},
     '130680': {'name': 'OIL', 'label': 'TIGER 원유선물 (원유)', 'group': '대안투자'},
-    '138230': {'name': 'USD', 'label': 'KOSEF 미국달러선물 (달러)', 'group': '대안투자'},
+    '138230': {'name': 'USD', 'label': 'KIWOOM 미국달러선물 (달러)', 'group': '대안투자'},
+    # 아래 12종은 data/extra_data 의 collect_data.py 로 추가한 상품 (열 이름 = etf_prices.csv 열 이름)
+    '132030': {'name': 'GOLD', 'label': 'KODEX 골드선물(H) (금)', 'group': '대안투자'},
+    '329200': {'name': 'REIT', 'label': 'TIGER 리츠부동산인프라 (리츠·부동산)', 'group': '대안투자'},
+    '133690': {'name': 'NASDAQ100', 'label': 'TIGER 미국나스닥100 (미국 성장주)', 'group': '주식'},
+    '161510': {'name': 'DIVIDEND', 'label': 'PLUS 고배당주 (국내 배당주)', 'group': '주식'},
+    '114260': {'name': 'KTB3Y', 'label': 'KODEX 국고채3년 (국내 국고채)', 'group': '채권·예금'},
+    '153130': {'name': 'SHORTBOND', 'label': 'KODEX 단기채권 (국내 단기채권)', 'group': '채권·예금'},
+    '136340': {'name': 'CORPBOND', 'label': 'RISE 중기우량회사채 (국내 회사채)', 'group': '채권·예금'},
+    '148070': {'name': 'KTB10Y', 'label': 'KIWOOM 국고채10년 (국내 장기채권)', 'group': '채권·예금'},
+    '305080': {'name': 'UST10Y', 'label': 'TIGER 미국채10년선물 (미국 장기국채)', 'group': '채권·예금'},
+    '304660': {'name': 'UST30Y_H', 'label': 'KODEX 미국30년국채울트라선물(H) (미국 장기국채)', 'group': '채권·예금'},
+    '284430': {'name': 'MIX_K200_UST', 'label': 'KODEX 200미국채혼합50 (주식·채권 혼합)', 'group': '자산배분'},
+    '251600': {'name': 'MIX_DIVIDEND', 'label': 'PLUS 고배당주채권혼합 (주식·채권 혼합)', 'group': '자산배분'},
 }
 NAME_TO_LABEL = {v['name']: v['label'] for v in ETF_INFO.values()}
 NAME_TO_LABEL['CASH'] = '현금 (CMA·예금)'
@@ -29,7 +42,10 @@ CASH = 'CASH'
 ETF_NAMES = [v['name'] for v in ETF_INFO.values()]
 DATA_FILE = Path(__file__).parent / 'data' / 'etf_prices.csv'
 STOCK_FILE = Path(__file__).parent / 'data' / 'stock_prices.csv'   # update_stock_data.py 가 만든 팩터 종목 가격
-STOCK_SHARE = 0.5   # 주식 몫 중 개별 종목(PER·PBR·ROE 순위합 상위, factor.py)으로 담는 비율
+STOCK_SHARE = 0.5   # 주식 몫 중 개별 종목으로 담는 비율
+EXTRA_DIR = Path(__file__).parent / 'data'    # collect_data.py 결과 (개별주 가격·상품정보)
+MIN_WEIGHT = 0.03   # 상품 하나의 최소 비중. 이보다 작은 상품은 빼고 같은 자산군의 나머지에 다시 나눠요
+MAX_STOCKS = 10     # 개별 종목 최대 개수 (종목 하나당 최소 비중 MIN_WEIGHT 를 지키도록 개수는 비중에서 계산)
 
 # ── 2. 투자성향별 자산군 배분 (법률신문 기사 〈그림 1〉 수치, 팀 논의 후 수정 예정) ──
 PROFILES = ['안정형', '안정성장형', '성장형', '공격형']
@@ -75,13 +91,32 @@ def judge_profile(answers, period):
 
 
 # ── 4. 입력값: 기대수익률과 공분산 (강의: 일간수익률 평균 × 240, 공분산 × 240) ──
-def load_prices(path=DATA_FILE, with_stocks=False):
-    """ETF 8종 가격. with_stocks=True 면 팩터 종목 가격도 옆에 붙여요 (상장 전 날짜는 NaN)"""
+def load_prices(path=DATA_FILE, with_stocks=False, with_candidates=False):
+    """ETF 20종 가격. with_stocks=True 면 팩터 종목 가격, with_candidates=True 면 거래대금 상위 개별주(국내·해외 원화환산)
+    가격도 옆에 붙여요 (상장 전 날짜는 NaN)"""
     df = pd.read_csv(path, index_col=0, parse_dates=True)
     if with_stocks:
         stock = pd.read_csv(STOCK_FILE, index_col=0, parse_dates=True)
         df = df.join(stock)
+    if with_candidates and STOCK_CATALOG is not None:
+        for fname in ('stock_kr.csv', 'stock_us.csv'):
+            df = df.join(pd.read_csv(EXTRA_DIR / fname, index_col=0, parse_dates=True))
     return df
+
+
+def load_stock_catalog():
+    """products.csv 의 개별 주식 (열 이름 → 종목코드·이름·세부군·평균거래대금). 파일이 없으면 None"""
+    try:
+        p = pd.read_csv(EXTRA_DIR / 'products.csv', dtype={'code': str})
+    except FileNotFoundError:
+        return None
+    return p[p['type'] == '주식'].set_index('price_column')[['code', 'name', 'sub_class', 'currency', 'avg_amount_krw']]
+
+
+STOCK_CATALOG = load_stock_catalog()
+if STOCK_CATALOG is not None:                      # 화면·표에 쓸 이름 (ETF 와 같은 NAME_TO_LABEL 에 합침)
+    for _col, _r in STOCK_CATALOG.iterrows():
+        NAME_TO_LABEL[_col] = _r['name'] + ' (' + _r['sub_class'] + ')'
 
 
 def model_inputs(prices, end=None):
@@ -89,7 +124,8 @@ def model_inputs(prices, end=None):
     if end is not None:
         prices = prices.loc[:end]
     recent = prices.loc[prices.index[-1] - pd.DateOffset(years=LOOKBACK_YEARS):]
-    etfs = [c for c in recent.columns if c in ETF_NAMES]
+    # 최근 기간 내내 가격이 있는 ETF 만 사용 (상장이 늦어 그 시점에 3년이 안 되는 ETF 는 그 시점 계산에서 제외. 백테스트 과거 시점용)
+    etfs = [c for c in ETF_NAMES if c in recent.columns and recent[c].notna().all()]
     rets = recent.pct_change().dropna(subset=etfs)  # 일간수익률 (개별 종목은 상장 전이면 NaN)
     avg_returns = rets[etfs].mean() * DAYS         # 연율화 기대수익률
     cov_mat = rets[etfs].cov() * DAYS              # 연율화 공분산 행렬 (최적화는 ETF 끼리만)
@@ -143,13 +179,65 @@ def optimize(names, cov_mat, model):
 
 
 # ── 6. 추천 비중 만들기 ─────────────────────────────────────────────────
-def stock_sleeve(etf_names, cov_mat, model, picks):
+def stock_sleeve(etf_names, cov_mat, model, picks, group_pct=None):
     """주식 몫 = ETF 최적화 비중 × (1 − STOCK_SHARE) + 팩터 종목 같은 비중 × STOCK_SHARE"""
     etf_w = optimize(etf_names, cov_mat, model)
+    if group_pct:                                      # ETF 쪽만 최소 비중 정리 (개별 종목이 ETF 몫을 다 가져가지 않게)
+        etf_w = apply_min_weight(etf_w, group_pct * (1 - STOCK_SHARE if picks else 1))
     if not picks:
         return etf_w
     stock_w = pd.Series(1 / len(picks), index=picks)
     return pd.concat([etf_w * (1 - STOCK_SHARE), stock_w * STOCK_SHARE])
+
+
+def choose_picks(profile, prices, budget, factor_names=None):
+    """개별 종목 고르기: 반은 팩터 종목(factor.py), 반은 거래대금 상위 종목 (products.csv 의 avg_amount_krw 순).
+    - 개수 = (성향표 주식 비중 × STOCK_SHARE) ÷ MIN_WEIGHT 의 몫 (최대 MAX_STOCKS). 0개면 ETF 만 써요.
+    - 최근 LOOKBACK_YEARS 년 내내 가격이 있고, 예산으로 1주 이상 살 수 있는 종목만 (못 사면 다음 순위로)
+    """
+    total = PROFILE_TABLE[profile]['주식'] / 100 * STOCK_SHARE
+    n = min(MAX_STOCKS, int(total / MIN_WEIGHT + 1e-9))
+    if n == 0:
+        return []
+    per_amount = budget * total / n                               # 종목 하나에 배정되는 금액
+    px = prices.ffill()
+    start = px.index[-1] - pd.DateOffset(years=LOOKBACK_YEARS)
+
+    def ok(name):
+        return name in px.columns and px.loc[start:, name].notna().all() and px[name].iloc[-1] <= per_amount
+
+    if factor_names is None:
+        try:
+            factor_names = current_picks()
+        except Exception:
+            factor_names = []
+    ranked = [] if STOCK_CATALOG is None else \
+        list(STOCK_CATALOG.dropna(subset=['avg_amount_krw']).sort_values('avg_amount_krw', ascending=False).index)
+    chosen = []
+    for source, k in ((factor_names, n // 2), (ranked, n - n // 2)):
+        for name in source:
+            if k == 0:
+                break
+            if name not in chosen and ok(name):
+                chosen.append(name)
+                k -= 1
+    for name in list(factor_names) + ranked:                      # 한쪽이 모자라면 남은 후보로 채움
+        if len(chosen) >= n:
+            break
+        if name not in chosen and ok(name):
+            chosen.append(name)
+    return chosen
+
+
+def apply_min_weight(sleeve, group_pct):
+    """자산군 안 비중(합 1)에서 가장 작은 상품부터 하나씩 빼며 다시 합 1로 맞춰요.
+    남은 상품의 최종 비중(자산군 비중 × 안 비중)이 모두 MIN_WEIGHT 이상이 되거나 하나만 남으면 멈춰요."""
+    w = sleeve[sleeve > 0]
+    w = w / w.sum()
+    while len(w) > 1 and (w * group_pct / 100).min() < MIN_WEIGHT:
+        w = w.drop(w.idxmin())
+        w = w / w.sum()
+    return w
 
 
 def build_portfolio(profile, cov_mat, picks=None):
@@ -160,16 +248,22 @@ def build_portfolio(profile, cov_mat, picks=None):
     """
     table = PROFILE_TABLE[profile]
     model = MODEL_BY_PROFILE[profile]
-    by_group = {g: [v['name'] for v in ETF_INFO.values() if v['group'] == g] for g in ['채권·예금', '주식', '대안투자']}
-    all_etfs = [v['name'] for v in ETF_INFO.values()]
+    usable = set(cov_mat.index)                       # 그 시점에 3년 데이터가 있는 ETF 만
+    by_group = {g: [v['name'] for v in ETF_INFO.values() if v['group'] == g and v['name'] in usable]
+                for g in ['채권·예금', '주식', '대안투자', '자산배분']}
+    if not by_group['자산배분']:                       # 혼합형 ETF 가 아직 3년이 안 된 과거 시점: 쓸 수 있는 ETF 전체를 위험균형으로
+        by_group['자산배분'] = [v['name'] for v in ETF_INFO.values() if v['name'] in usable]
 
     sleeves = {
         '채권·예금': optimize(by_group['채권·예금'], cov_mat, model),
-        '주식': stock_sleeve(by_group['주식'], cov_mat, model, picks),
+        '주식': stock_sleeve(by_group['주식'], cov_mat, model, picks, table['주식']),
         '대안투자': optimize(by_group['대안투자'], cov_mat, model),
-        '자산배분': optimize(all_etfs, cov_mat, 'RP'),      # 8종 전체를 위험균형으로 섞은 분산형 묶음
+        '자산배분': optimize(by_group['자산배분'], cov_mat, 'RP'),      # 주식·채권 혼합형 ETF 를 위험균형으로 섞은 묶음
         '유동성': pd.Series(1.0, index=[CASH]),
     }
+    for g in ['채권·예금', '대안투자', '자산배분']:                  # 너무 작은 비중은 정리 (주식은 stock_sleeve 안에서)
+        if table[g] > 0:
+            sleeves[g] = apply_min_weight(sleeves[g], table[g])
     rows = []
     for g in GROUPS:
         for name, w in sleeves[g].items():
@@ -189,7 +283,7 @@ def current_picks(date=None):
 
 # ── 7. 예산 → 금액·수량 ────────────────────────────────────────────────
 def allocate_budget(weights, prices, budget):
-    last = prices.iloc[-1]
+    last = prices.ffill().iloc[-1]                  # 개별 종목은 마지막 날 가격이 비어 있으면 직전 가격
     rows, spent = [], 0
     for name, w in weights.items():
         if name == CASH:
@@ -237,7 +331,7 @@ def hashtags(profile, period, weights, detail):
         tags.append('#채권중심')
     if g.get('주식', 0) >= 0.4:
         tags.append('#주식중심')
-    overseas = sum(weights.get(n, 0) for n in ['SP500', 'TOPIX', 'CSI300', 'EUROSTOXX50'])
+    overseas = sum(weights.get(n, 0) for n in ['SP500', 'TOPIX', 'CSI300', 'EUROSTOXX50', 'NASDAQ100', 'UST10Y', 'UST30Y_H'])
     if overseas > weights.get('KOSPI200', 0):
         tags.append('#글로벌분산')
     tags.append('#' + MODEL_NAME[MODEL_BY_PROFILE[profile]].split('(')[0].replace(' ', ''))

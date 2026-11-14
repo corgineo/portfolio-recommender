@@ -5,14 +5,30 @@ import recommender as rc
 from portfolio_editor import render_portfolio_editor
 
 
-def build_assets(prices):
+def build_assets(prices, extra=()):
     rows = []
     for ticker, info in rc.ETF_INFO.items():
         rows.append(dict(ticker=ticker, name=info['label'], asset_class=info['group'],
                          price=prices.iloc[-1][info['name']],
                          as_of=prices.index[-1].strftime('%Y-%m-%d'),
                          source='FinanceDataReader · 기존 data/etf_prices.csv'))
+    cat = rc.STOCK_CATALOG
+    for name in extra:                                  # 이번 추천에 들어간 개별 종목
+        code = cat.at[name, 'code'] if cat is not None and name in cat.index else name
+        label = rc.NAME_TO_LABEL.get(name, name)
+        rows.append(dict(ticker=code, name=label, asset_class='주식',
+                         price=prices[name].ffill().iloc[-1],
+                         as_of=prices[name].dropna().index[-1].strftime('%Y-%m-%d'),
+                         source='FinanceDataReader · data/extra_data (해외는 원/달러 환산)'))
     return pd.DataFrame(rows)
+
+
+def _code_to_name(prices):
+    m = {k: v['name'] for k, v in rc.ETF_INFO.items()}
+    cat = rc.STOCK_CATALOG
+    if cat is not None:
+        m.update({r['code']: n for n, r in cat.iterrows()})
+    return m
 
 
 def compare_target_weights(prices, base, edited, base_cash, edited_cash, budget):
@@ -20,12 +36,14 @@ def compare_target_weights(prices, base, edited, base_cash, edited_cash, budget)
     # 아래는 목표 비중을 매일 유지하는 기존 모형과 같은 가정의 비교다.
     recent = prices.sort_index().loc[prices.index.max() - pd.DateOffset(years=rc.LOOKBACK_YEARS):]
     daily = recent.pct_change(fill_method=None).iloc[1:]
+    used = {r.ticker for r in list(base.itertuples()) + list(edited.itertuples())}
+    code_to_name = {**_code_to_name(prices), **{t: t for t in used}}          # 이름이 곧 열 이름인 종목(팩터 종목)은 그대로
+    daily = daily[[c for c in daily.columns if c in {code_to_name.get(t, t) for t in used}]]
     if len(daily) < 2 or daily.isna().any().any() or not np.isfinite(daily.to_numpy()).all():
         raise ValueError('성과 비교에 필요한 공통 가격 데이터가 부족하거나 누락됐어.')
     metrics, curves = [], {}
     for label, alloc in [('추천안', base), ('수정안', edited)]:
-        code_to_name = {k: v['name'] for k,v in rc.ETF_INFO.items()}
-        weight = pd.Series({code_to_name[r.ticker]: r.target_pct / 100 for r in alloc.itertuples()})
+        weight = pd.Series({code_to_name.get(r.ticker, r.ticker): r.target_pct / 100 for r in alloc.itertuples()})
         returns = daily[weight.index] @ weight
         nav = pd.concat([pd.Series([100.0], index=[recent.index[0]]), (1+returns).cumprod()*100])
         curves[label] = nav
@@ -41,8 +59,14 @@ def compare_target_weights(prices, base, edited, base_cash, edited_cash, budget)
 
 
 def render_existing_editor(prices, weights, budget):
-    assets = build_assets(prices)
-    recommended = {code: float(weights.get(info['name'],0))*100 for code,info in rc.ETF_INFO.items()}
+    prices = prices.ffill()                             # 개별 종목은 마지막 날 가격이 비어 있으면 직전 가격
+    extra = [n for n in weights.index if n not in rc.ETF_NAMES and n != rc.CASH]
+    assets = build_assets(prices, extra)
+    code_to_name = _code_to_name(prices)
+    recommended = {code: float(weights.get(name, 0)) * 100 for code, name in code_to_name.items() if code in set(assets.ticker)}
+    for name in extra:                                  # 팩터 종목처럼 코드가 products.csv 에 없는 경우: 이름이 키
+        if rc.STOCK_CATALOG is None or name not in rc.STOCK_CATALOG.index:
+            recommended[name] = float(weights.get(name, 0)) * 100
     return render_portfolio_editor(assets, recommended, default_budget=budget,
         key='existing_recommendation_c',
         analysis_fn=lambda *args: compare_target_weights(prices, *args))
