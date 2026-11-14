@@ -18,7 +18,7 @@ import recommender as rc                    # noqa: E402
 import c_integration as ci                  # noqa: E402
 import company_financials as cf             # noqa: E402
 from portfolio_core import allocate         # noqa: E402
-from portfolio_editor import cap_value      # noqa: E402
+from portfolio_editor import cap_value, nav_compare_figure, group_compare_figure   # noqa: E402
 
 BUDGETS = [100_000, 1_000_000, 10_000_000]
 
@@ -403,6 +403,69 @@ def test_editor_budget_persists_across_pages(app):
     at.session_state['budget'] = 5_000_000                 # 설문 예산(기본 예산)이 바뀌면 새 기본 예산으로
     at.run()
     assert _budget_shown(at) == (5_000_000,) * 3
+
+
+# ── 비교 그래프: 원래 추천안(고정 기준선) vs 내 수정안 ─────────────────────
+def test_compare_figures_pure():
+    idx = pd.date_range('2024-01-01', periods=4)
+    nav = pd.DataFrame({'추천안': [100, 101, 99.5, 102], '내 구성': [100, 103, 98, 104.25]}, index=idx)
+    fig = nav_compare_figure(nav)
+    rec, mine = fig.data
+    assert (rec.name, mine.name) == ('원래 추천안', '내 수정안')
+    assert rec.line.dash == 'dot' and mine.line.dash is None and rec.line.color != mine.line.color
+    assert list(rec.y) == [100, 101, 99.5, 102] and list(mine.y) == [100, 103, 98, 104.25]   # 값은 그대로 옮기기만
+    same = nav_compare_figure(nav.assign(**{'내 구성': nav['추천안']}))
+    assert list(same.data[0].y) == list(same.data[1].y)
+    g = group_compare_figure(pd.Series({'주식': 60.0, '유동성': 40.0}), pd.Series({'주식': 30.0, '채권·예금': 70.0}))
+    bars = {b.name: list(b.x) for b in g.data}
+    assert list(g.data[0].y) == ['내 수정안', '원래 추천안']
+    assert bars['주식'] == [30.0, 60.0] and bars['채권'] == [70.0, 0.0] and bars['현금'] == [0.0, 40.0]
+
+
+def _charts(at):
+    """비교 패널 그래프 두 개: (선 그래프 {이름: y}, 막대 {자산 종류: [내 수정안, 원래 추천안]})"""
+    import json
+    nav, bar = None, None
+    for c in at.get('plotly_chart'):
+        data = json.loads(c.proto.spec)['data']
+        names = [d.get('name') for d in data]
+        if names == ['원래 추천안', '내 수정안'] and data[0].get('mode') == 'lines':
+            nav = {d['name']: d['y'] for d in data}
+        elif data and data[0].get('type') == 'bar' and data[0].get('y') == ['내 수정안', '원래 추천안']:
+            bar = {d['name']: d['x'] for d in data}
+    assert nav is not None and bar is not None, '비교 그래프 두 개가 탭 없이 그려져야 해요'
+    return nav, bar
+
+
+def test_compare_chart_baseline_fixed_and_mine_moves(app):
+    at = _mock(app)
+    nav0, bar0 = _charts(at)
+    assert nav0['원래 추천안'] == nav0['내 수정안']                 # 처음에는 같은 비중 → 두 선이 겹쳐요
+    assert all(v[0] == v[1] for v in bar0.values())
+    assert '두 선이 겹쳐 보여요' in '\n'.join(m.value for m in at.markdown)
+    rec = dict(_model(at))
+    t = max(rec, key=rec.get)
+    _show(at, t)[1].set_value(0.0).run()                          # 실제 수치를 크게 바꿔요
+    nav1, bar1 = _charts(at)
+    assert nav1['원래 추천안'] == nav0['원래 추천안']              # 기준선(원래 추천안)은 그대로
+    assert [v[1] for v in bar1.values()] == [v[1] for v in bar0.values()]
+    assert nav1['내 수정안'] != nav0['내 수정안']                  # 내 수정안 선만 바뀌어요
+    assert max(abs(a - b) for a, b in zip(nav1['내 수정안'], nav1['원래 추천안'])) > 0.01
+    _show(at, t)[1].set_value(100.0).run()                        # 100% 한도로 잘려도 기준선은 그대로
+    others = sum(v for k, v in rec.items() if k != t)
+    assert _model(at)[t] == pytest.approx(100 - others) and sum(_model(at).values()) <= 100 + 1e-6
+    assert _charts(at)[0]['원래 추천안'] == nav0['원래 추천안']
+    at.number_input(key=f'{EK}_budget').set_value(12_300_000).run()   # 예산을 바꿔도 비중 기준 선은 그대로
+    assert _charts(at)[0]['원래 추천안'] == nav0['원래 추천안']
+    at.session_state['page'] = 'result'                           # 페이지 왕복 뒤에도 같은 기준선
+    at.run()
+    at.session_state['page'] = 'mock'
+    at.run()
+    assert _charts(at)[0]['원래 추천안'] == nav0['원래 추천안']
+    assert at.number_input(key=f'{EK}_budget').value == 12_300_000
+    at.button(key=f'{EK}_reset').click().run()                    # 되돌리면 다시 같은 선
+    nav2, _ = _charts(at)
+    assert nav2['원래 추천안'] == nav0['원래 추천안'] == nav2['내 수정안']
 
 
 def test_editor_signature_change_resets(app):

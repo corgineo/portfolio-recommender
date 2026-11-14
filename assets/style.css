@@ -51,7 +51,20 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, [role=
 .stButton button, .stFormSubmitButton > button, .stDownloadButton > button {
   border-radius: var(--r-s) !important; font-weight: 700 !important; font-size: 16px !important;
   padding: 10px 20px !important; min-height: 48px; transition: transform .08s, background .15s, border-color .15s;
+  display: inline-flex; align-items: center; justify-content: center; height: auto; line-height: 1.35;
 }
+/* Streamlit 1.66 은 버튼 글자를 stMarkdownEllipsis(한 줄 + 넘치면 …)로 감싸요. 긴 한글 버튼은 숨기지 않고 줄바꿈해요.
+   (버튼·세그먼트·알약·탭·펼침 제목 안의 글자 칸만 대상: 본문 문단에는 영향 없음) */
+.stButton button [data-testid="stMarkdownContainer"], .stDownloadButton button [data-testid="stMarkdownContainer"],
+.stFormSubmitButton button [data-testid="stMarkdownContainer"], [data-testid="stButtonGroup"] button [data-testid="stMarkdownContainer"],
+[data-testid="stTab"] [data-testid="stMarkdownContainer"], [data-testid="stExpander"] summary [data-testid="stMarkdownContainer"] {
+  white-space: normal !important; overflow: visible !important; text-overflow: clip !important; min-width: 0; max-width: 100%;
+}
+.stButton button p, .stDownloadButton button p, .stFormSubmitButton button p, [data-testid="stButtonGroup"] button p,
+[data-testid="stTab"] p, [data-testid="stExpander"] summary p {
+  margin: 0 !important; line-height: 1.35 !important; white-space: normal; word-break: keep-all; overflow-wrap: anywhere;
+}
+.stButton button p, .stDownloadButton button p, .stFormSubmitButton button p, [data-testid="stButtonGroup"] button p { text-align: center; }
 .stButton button[kind="primary"] { background: var(--brand) !important; border: 0 !important; color: #fff !important; box-shadow: 0 6px 16px -8px rgba(46,91,127,.7); }
 .stButton button[kind="primary"]:hover { background: var(--brand-dk) !important; }
 .stButton button[kind="secondary"], .stDownloadButton > button { background: var(--surface) !important; border: 1px solid #D6CFC2 !important; color: var(--ink) !important; }
@@ -91,7 +104,7 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, [role=
 .st-key-nav_mock button[kind="secondary"]:hover { background: var(--brand-soft) !important; }
 @media (max-width: 680px) {
   .st-key-navbar { flex-wrap: wrap !important; row-gap: 4px !important; padding: 8px 0 !important; }
-  .st-key-navmenu { width: 100% !important; justify-content: flex-start !important; flex-wrap: nowrap !important; overflow-x: auto; gap: 4px !important; }
+  .st-key-navmenu { width: 100% !important; justify-content: flex-start !important; flex-wrap: wrap !important; overflow-x: visible; gap: 4px !important; }
   .st-key-navmenu .stButton button { padding: 6px 12px !important; }
   .st-key-navmenu .stButton button p { font-size: 14.5px !important; }
 }
@@ -111,7 +124,8 @@ button:focus-visible, [role="button"]:focus-visible, input:focus-visible, [role=
 .page-h.big h1 { font-size: 44px !important; }
 .page-h p.lead { font-size: 17px; line-height: 1.7; }
 [data-testid="stExpander"] details { border-radius: var(--r-m) !important; border: 1px solid var(--line) !important; background: var(--surface); }
-[data-testid="stExpander"] summary { min-height: 52px; font-weight: 700; }
+[data-testid="stExpander"] summary { min-height: 52px; font-weight: 700; display: flex; align-items: center; padding-top: 10px; padding-bottom: 10px; }
+[data-testid="stExpander"] summary > span { display: flex; align-items: center; gap: 8px; min-width: 0; }
 [data-testid="stExpander"] summary p { font-size: 15.5px !important; font-weight: 700 !important; color: var(--ink) !important; }
 [data-testid="stExpander"] { margin-top: 8px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: -1px; flex: none; }
@@ -245,7 +259,7 @@ ul.terms.plain { background: transparent; padding: 4px 0 !important; }
 [data-testid="stRadioGroup"] { display: flex !important; flex-direction: column !important; gap: 8px !important; align-items: stretch !important; }
 [data-testid="stRadioGroup"] > div { width: 100%; margin: 0 !important; }
 [data-testid="stRadioOption"] {
-  display: flex !important; box-sizing: border-box; width: 100%; margin: 0 !important; padding: 16px 20px !important; min-height: 56px;
+  display: flex !important; align-items: center; box-sizing: border-box; width: 100%; margin: 0 !important; padding: 16px 20px !important; min-height: 56px;
   border: 1px solid var(--line); border-radius: var(--r-m); background: var(--surface); cursor: pointer; transition: border-color .12s, background .12s, box-shadow .12s;
 }
 [data-testid="stRadioOption"]:hover { border-color: #9DB3C7; }
@@ -256,8 +270,19 @@ ul.terms.plain { background: transparent; padding: 4px 0 !important; }
 [data-testid="stExpander"] [data-testid="stRadioOption"] p { font-size: 15.5px !important; }
 
 /* 금액 입력 */
-[data-testid="stNumberInput"] input { font-size: 22px !important; font-weight: 700; height: 56px; font-variant-numeric: tabular-nums; }
+[data-testid="stNumberInputContainer"] { height: auto !important; min-height: 56px; display: flex; align-items: stretch; border-radius: var(--r-s) !important; }
+[data-testid="stNumberInput"] input {
+  font-size: 22px !important; font-weight: 700; font-variant-numeric: tabular-nums;
+  flex: 1 1 auto; min-width: 0; width: 100%; height: auto !important; min-height: 56px; box-sizing: border-box;
+  padding: 0 8px 0 14px !important; line-height: normal !important; text-overflow: clip;
+}
+[data-testid="stNumberInputContainer"] > div:last-child { flex: 0 0 auto; display: flex; align-items: stretch; }
+[data-testid="stNumberInputStepDown"], [data-testid="stNumberInputStepUp"] {
+  flex: 0 0 auto; width: 32px; min-width: 32px; height: auto; display: flex; align-items: center; justify-content: center; padding: 0 !important;
+}
 [data-testid="stNumberInput"] > div { border-radius: var(--r-s) !important; }
+[data-testid="stButtonGroup"] [role="radiogroup"] { flex-wrap: wrap; }
+[data-testid="stButtonGroup"] button { min-height: 40px; height: auto; padding-top: 6px !important; padding-bottom: 6px !important; display: inline-flex; align-items: center; justify-content: center; }
 .won { font-size: 15px; color: var(--brand); font-weight: 700; margin: -6px 0 16px; }
 [data-testid="stPills"] button { border-radius: 99px !important; min-height: 40px; }
 
@@ -525,7 +550,16 @@ ul.checks li::marker { content: none; }
 .erow .rd em, ul.gdiff em { font-style: normal; font-weight: 700; }
 .erow .rd em.up { color: #B4532A; } .erow .rd em.dn { color: var(--brand); }
 [class*="st-key-existing_recommendation_c_row_"] [data-testid="stSlider"] { padding-top: 0; }
-[class*="st-key-existing_recommendation_c_row_"] [data-testid="stNumberInput"] input { font-variant-numeric: tabular-nums; }
+[class*="st-key-existing_recommendation_c_row_"] [data-testid="stNumberInputContainer"] { min-height: 44px; }
+[class*="st-key-existing_recommendation_c_row_"] [data-testid="stNumberInput"] input { font-size: 16px !important; min-height: 44px; padding: 0 4px 0 10px !important; }
+[class*="st-key-existing_recommendation_c_row_"] [data-testid="stNumberInputStepDown"],
+[class*="st-key-existing_recommendation_c_row_"] [data-testid="stNumberInputStepUp"] { width: 26px; min-width: 26px; }
+/* 비교 패널 그래프 제목 */
+.cmp-t { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 12px 0 0 !important;
+  font-size: 14.5px; font-weight: 800; color: var(--ink) !important; line-height: 1.4; }
+.cmp-t span { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.st-key-cmp_panel .warnline { margin: 6px 0 4px; font-size: 13px; line-height: 1.55; }
+.panel-h { flex-wrap: wrap; }
 ul.gdiff { list-style: none; padding: 0 !important; margin: 4px 0 8px !important; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
 ul.gdiff li { font-size: 13.5px; margin: 0 !important; display: flex; align-items: center; gap: 6px; }
 ul.gdiff li span { margin-left: auto; color: var(--muted); font-size: 12.5px; }
@@ -581,3 +615,6 @@ table.mtab td:first-child, table.mtab th:first-child { text-align: left; }
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* 세 줄 상단 메뉴가 생기는 작은 화면에서도 비교 제목을 가리지 않아요. */
+@media (max-width: 360px) { #cmp-view { scroll-margin-top: 190px; } }

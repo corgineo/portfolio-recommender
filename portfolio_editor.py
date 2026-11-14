@@ -7,7 +7,8 @@
 화면 구조
 - 맨 위: 예산 · 담은 비중 · 실제로 사는 돈 · 남는 현금 요약
 - 왼쪽: 자산 종류 필터(전체/채권/주식/다른 자산/자산배분) + 상품 목록(한 번에 5개, 더 보기). 행마다 짧은 슬라이더 + 정확한 % 입력.
-- 오른쪽(스크롤해도 따라오는 비교 패널): 구성 차이 · 과거 성과 · 구성 도넛 탭
+- 오른쪽(스크롤해도 따라오는 비교 패널): 과거 성과 선 그래프(원래 추천안 점선 vs 내 수정안 실선)와 자산 종류 막대를
+  탭 없이 늘 보여 주고, 바뀐 상품 · 성과 숫자 · 구성 도넛은 아래 탭에 접어 둬요
 - 아래 펼침: 실제 매수표 · CSV, 낱말 풀이
 모든 비중은 위젯 key 가 아니라 session_state[f'{key}_model']['w'] 에, 제작 예산은 ['budget'] 에 보관해요. Streamlit 은 화면에 그리지 않은
 위젯의 key 를 지우기 때문에, 필터·더 보기·페이지 왕복 뒤에도 값이 남도록 위젯 값은 매번 model 에서 채워요.
@@ -41,6 +42,44 @@ def _order(assets, recommended):
     gi = {g: i for i, g in enumerate(GROUP_ORDER)}
     cls = assets.set_index('ticker')['asset_class']
     return sorted(assets.ticker, key=lambda t: (gi.get(cls[t], 9), -recommended[t]))
+
+
+# ── 비교 그래프 (순수 함수: 입력 표 → Plotly 그림. 화면 밖에서도 검증할 수 있게 분리) ──
+REC_LABEL, MINE_LABEL = '원래 추천안', '내 수정안'      # 화면 이름 (계산 결과 열 이름은 '추천안' · '내 구성' 그대로)
+REC_LINE = dict(color='#8A93A6', width=2.5, dash='dot')
+MINE_LINE = dict(color=BRAND, width=3)
+
+
+def nav_compare_figure(nav, height=240):
+    """과거 성과 선 그래프: '추천안' 열 → 원래 추천안(회색 점선, 고정 기준선), '내 구성' 열 → 내 수정안(브랜드 실선).
+    값은 그대로 옮기기만 하고 다시 계산하지 않아요. 내 수정안을 나중에 그려 두 선이 겹치면 실선이 위에 보여요."""
+    fig = go.Figure()
+    x = [d.strftime('%Y-%m-%d') if hasattr(d, 'strftime') else d for d in nav.index]
+    for col, name, line in [('추천안', REC_LABEL, REC_LINE), ('내 구성', MINE_LABEL, MINE_LINE)]:
+        fig.add_scatter(x=x, y=[float(v) for v in nav[col]], name=name, mode='lines', line=dict(line),
+                        hovertemplate='%{y:.1f}<extra>' + name + '</extra>')
+    plot_style(fig, height, hovermode='x unified')
+    fig.update_layout(margin=dict(t=36, b=8, l=8, r=16),
+                      legend=dict(orientation='h', x=0, y=1.02, xanchor='left', yanchor='bottom', font=dict(size=13)))
+    fig.update_xaxes(automargin=True, nticks=5, tickformat='%y.%m')
+    fig.update_yaxes(automargin=True, nticks=5)
+    return fig
+
+
+def group_compare_figure(g_rec, g_mine, height=210):
+    """자산 종류별 목표 비중 막대: 위 막대 원래 추천안, 아래 막대 내 수정안 (합계 100%, 현금 포함)"""
+    fig = go.Figure()
+    ys = [MINE_LABEL, REC_LABEL]                         # 가로 막대는 아래부터 그려져서 추천안이 위에 와요
+    for g in GROUP_ORDER + ['유동성']:
+        fig.add_bar(y=ys, x=[float(g_mine.get(g, 0)), float(g_rec.get(g, 0))], name=GROUP_TINY[g], orientation='h',
+                    marker_color=rc.GROUP_BASE[g], hovertemplate=f'{GROUP_TINY[g]} %{{x:.1f}}%<extra>%{{y}}</extra>')
+    plot_style(fig, height, barmode='stack')
+    fig.update_layout(margin=dict(t=8, b=8, l=8, r=16), bargap=0.35,
+                      legend=dict(orientation='h', x=0, y=-0.22, xanchor='left', yanchor='top', font=dict(size=12),
+                                  traceorder='normal'))
+    fig.update_xaxes(range=[0, 100], ticksuffix='%', automargin=True, dtick=25)
+    fig.update_yaxes(automargin=True, ticksuffix='  ')
+    return fig
 
 
 def render_portfolio_editor(assets, recommended_weights, *, default_budget=1_000_000,
@@ -226,17 +265,31 @@ def render_portfolio_editor(assets, recommended_weights, *, default_budget=1_000
     with right:
         with st.container(border=True, key='cmp_panel'):
             html('<div id="cmp-view" class="panel-h"><b>추천안과 비교</b><span>바꾸면 바로 다시 계산돼요</span></div>')
-            t1, t2, t3 = st.tabs(['구성 차이', '과거 성과', '구성 도넛'])
+            # 핵심 그래프 두 개는 탭 없이 늘 보여요: ① 과거 성과 선(원래 추천안 점선 vs 내 수정안 실선) ② 자산 종류 막대
+            result, err = None, None
+            if analysis_fn is not None:
+                try:
+                    result = analysis_fn(base.copy(), edited.copy(), base_cash, cash, budget)
+                except Exception as exc:            # noqa: BLE001 — 화면은 계속 쓸 수 있게
+                    err = exc
+            html('<p class="cmp-t">과거 성과 흐름 <span>시작값 100</span></p>')
+            if analysis_fn is None:
+                st.caption('과거 성과 비교 기능이 연결되지 않았어요.')
+            elif err is not None:
+                st.warning(f'과거 성과를 계산하지 못했어요. {err}')
+            else:
+                st.plotly_chart(nav_compare_figure(result['nav']), width='stretch',
+                                config={'displayModeBar': False}, key=f'{key}_nav')
+                html('<p class="cap">' + ('지금은 추천안과 비중이 같아서 두 선이 겹쳐 보여요. 비중을 바꾸면 ‘내 수정안’ 선이 따로 움직여요.'
+                                         if not changed else '점선은 처음 받은 추천안(고정), 실선은 지금 고친 내 수정안이에요.')
+                     + '</p>')
+                html(f'<p class="warnline">{esc(result["methodology"])}</p>')
+            html('<p class="cmp-t">자산 종류 비중 <span>목표 비중 기준</span></p>')
+            st.plotly_chart(group_compare_figure(g_rec, g_mine), width='stretch',
+                            config={'displayModeBar': False}, key=f'{key}_groupbar')
+            # 세부 내용은 탭으로 접어 두어 패널이 너무 길어지지 않게 해요
+            t1, t2, t3 = st.tabs(['바뀐 내용', '성과 숫자', '구성 도넛'])   # 탭 이름은 고정 (바뀌면 고른 탭이 초기화돼요)
             with t1:
-                fig = go.Figure()
-                for g in GROUP_ORDER + ['유동성']:
-                    fig.add_bar(y=['내 구성', '추천안'], x=[float(g_mine.get(g, 0)), float(g_rec.get(g, 0))],
-                                name=GROUP_TINY[g], orientation='h', marker_color=rc.GROUP_BASE[g],
-                                hovertemplate=f'{GROUP_TINY[g]} %{{x:.1f}}%<extra></extra>')
-                plot_style(fig, 170, barmode='stack')
-                fig.update_layout(legend=dict(orientation='h', y=-0.35, font=dict(size=12)))
-                fig.update_xaxes(range=[0, 100], ticksuffix='%')
-                st.plotly_chart(fig, width='stretch', config={'displayModeBar': False}, key=f'{key}_groupbar')
                 gl = ''
                 for g in GROUP_ORDER + ['유동성']:
                     a_, b_ = float(g_mine.get(g, 0)), float(g_rec.get(g, 0))
@@ -254,27 +307,15 @@ def render_portfolio_editor(assets, recommended_weights, *, default_budget=1_000
                 else:
                     html('<p class="cap">지금 구성은 추천안과 같아요.</p>')
             with t2:
-                if analysis_fn is None:
-                    st.caption('과거 성과 비교 기능이 연결되지 않았어요.')
+                if result is None:
+                    st.caption('과거 성과 숫자를 보여 드릴 수 없어요.')
                 else:
-                    try:
-                        result = analysis_fn(base.copy(), edited.copy(), base_cash, cash, budget)
-                        fig2 = go.Figure()
-                        for lab, color, dash in [('추천안', '#98a2b3', 'dot'), ('내 구성', BRAND, None)]:
-                            fig2.add_scatter(x=result['nav'].index, y=result['nav'][lab], name=lab,
-                                             line=dict(color=color, width=3 if dash is None else 2, dash=dash),
-                                             hovertemplate='%{y:.1f}<extra>' + lab + '</extra>')
-                        plot_style(fig2, 210, hovermode='x unified', top=24)
-                        st.plotly_chart(fig2, width='stretch', config={'displayModeBar': False}, key=f'{key}_nav')
-                        mt = result['metrics']
-                        trs = ''.join(
-                            f'<tr><td>{c.split(" (")[0]}</td><td>{mt.at["추천안", c]:.1f}%</td><td><b>{mt.at["내 구성", c]:.1f}%</b></td>'
-                            f'<td>{mt.at["내 구성", c] - mt.at["추천안", c]:+.1f}%p</td></tr>' for c in mt.columns)
-                        html(f'<table class="mtab"><thead><tr><th></th><th>추천안</th><th>내 구성</th><th>차이</th></tr></thead>'
-                             f'<tbody>{trs}</tbody></table>')
-                        html(f'<p class="warnline">{esc(result["methodology"])}</p>')
-                    except Exception as exc:            # noqa: BLE001 — 화면은 계속 쓸 수 있게
-                        st.warning(f'과거 성과를 계산하지 못했어요. {exc}')
+                    mt = result['metrics']
+                    trs = ''.join(
+                        f'<tr><td>{c.split(" (")[0]}</td><td>{mt.at["추천안", c]:.1f}%</td><td><b>{mt.at["내 구성", c]:.1f}%</b></td>'
+                        f'<td>{mt.at["내 구성", c] - mt.at["추천안", c]:+.1f}%p</td></tr>' for c in mt.columns)
+                    html(f'<table class="mtab"><thead><tr><th></th><th>원래 추천안</th><th>내 수정안</th><th>차이</th></tr></thead>'
+                         f'<tbody>{trs}</tbody></table>')
             with t3:
                 segs = [(info.at[t, 'name'], weights[t], colors[t]) for t in order if weights[t] > 0]
                 segs.append(('현금', remain, rc.GROUP_BASE['유동성']))
