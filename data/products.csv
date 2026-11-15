@@ -1,0 +1,64 @@
+﻿code,name,type,asset_class,sub_class,first_date,last_date,Market,Marcap,sector,currency,price_file,price_column,avg_amount_krw
+069500,KODEX 200,ETF,주식,국내 대형주 200,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,KOSPI200,
+122260,KIWOOM 통안채1년,채권,채권·예금,국내 단기채권,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,KBOND,
+195920,TIGER 일본TOPIX(합성 H),ETF,주식,일본 주식,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,TOPIX,
+143850,TIGER 미국S&P500선물(H),ETF,주식,미국 주식,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,SP500,
+192090,TIGER 차이나CSI300,ETF,주식,중국 주식,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,CSI300,
+195930,TIGER 유로스탁스50(합성 H),ETF,주식,유럽 주식,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,EUROSTOXX50,
+130680,TIGER 원유선물Enhanced(H),ETF,대안투자,원유,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,OIL,
+138230,KIWOOM 미국달러선물,ETF,대안투자,미국 달러,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,USD,
+132030,KODEX 골드선물(H),ETF,대안투자,금,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,GOLD,
+133690,TIGER 미국나스닥100,ETF,주식,미국 성장주,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,NASDAQ100,
+161510,PLUS 고배당주,ETF,주식,국내 배당주,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,DIVIDEND,
+284430,KODEX 200미국채혼합50,ETF,자산배분,주식·채권 혼합,2017-11-30,2026-11-13,,,,KRW,etf_prices.csv,MIX_K200_UST,
+251600,PLUS 고배당주채권혼합,ETF,자산배분,주식·채권 혼합,2016-08-11,2026-11-13,,,,KRW,etf_prices.csv,MIX_DIVIDEND,
+114260,KODEX 국고채3년,채권,채권·예금,국내 국고채,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,KTB3Y,
+153130,KODEX 단기채권,채권,채권·예금,국내 단기채권,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,SHORTBOND,
+136340,RISE 중기우량회사채,채권,채권·예금,국내 회사채,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,CORPBOND,
+148070,KIWOOM 국고채10년,채권,채권·예금,국내 장기채권,2016-01-04,2026-11-13,,,,KRW,etf_prices.csv,KTB10Y,
+305080,TIGER 미국채10년선물,채권,채권·예금,미국 장기국채,2018-08-30,2026-11-13,,,,KRW,etf_prices.csv,UST10Y,
+304660,KODEX 미국30년국채울트라선물(H),채권,채권·예금,미국 장기국채,2018-09-12,2026-11-13,,,,KRW,etf_prices.csv,UST30Y_H,
+329200,TIGER 리츠부동산인프라,ETF,대안투자,리츠·부동산,2019-07-19,2026-11-13,,,,KRW,etf_prices.csv,REIT,
+005930,삼성전자,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,1204333393248000.0,,KRW,stock_kr.csv,삼성전자,3859928073760.0
+000660,SK하이닉스,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,888278715840000.0,,KRW,stock_kr.csv,SK하이닉스,5015441079850.0
+005380,현대차,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,54834219594000.0,,KRW,stock_kr.csv,현대차,158530036475.0
+035420,NAVER,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,26241828840000.0,,KRW,stock_kr.csv,NAVER,158523253325.0
+028260,삼성물산,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,46217760585000.0,,KRW,stock_kr.csv,삼성물산,
+017670,SK텔레콤,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,18020885446700.0,,KRW,stock_kr.csv,SK텔레콤,
+033780,KT&G,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,18270640256000.0,,KRW,stock_kr.csv,KT&G,
+009150,삼성전기,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,63863110080000.0,,KRW,stock_kr.csv,삼성전기,909765618200.0
+402340,SK스퀘어,주식,주식,국내 개별주,2021-11-29,2026-11-13,KOSPI,100526086476000.0,,KRW,stock_kr.csv,SK스퀘어,573236700400.0
+006400,삼성SDI,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,38519883340000.0,,KRW,stock_kr.csv,삼성SDI,385595609900.0
+028050,삼성E&A,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,13484800000000.0,,KRW,stock_kr.csv,삼성E&A,231361056365.0
+353200,대덕전자,주식,주식,국내 개별주,2020-05-21,2026-11-13,KOSPI,4511765252500.0,,KRW,stock_kr.csv,대덕전자,172961075485.0
+373220,LG에너지솔루션,주식,주식,국내 개별주,2022-01-27,2026-11-13,KOSPI,75933000000000.0,,KRW,stock_kr.csv,LG에너지솔루션,166301181975.0
+009830,한화솔루션,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,5318708476400.0,,KRW,stock_kr.csv,한화솔루션,150649143928.0
+034020,두산에너빌리티,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,30010289690100.0,,KRW,stock_kr.csv,두산에너빌리티,149446158540.0
+105560,KB금융,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,56395349706000.0,,KRW,stock_kr.csv,KB금융,141949839360.0
+012450,한화에어로스페이스,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,33052140041000.0,,KRW,stock_kr.csv,한화에어로스페이스,139568744500.0
+042660,한화오션,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,14815087599900.0,,KRW,stock_kr.csv,한화오션,133546159575.0
+068270,셀트리온,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,49663595678000.0,,KRW,stock_kr.csv,셀트리온,133160698225.0
+034730,SK,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,36541362312000.0,,KRW,stock_kr.csv,SK,124442786450.0
+042700,한미반도체,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,17318226740000.0,,KRW,stock_kr.csv,한미반도체,122703284675.0
+180640,한진칼,주식,주식,국내 개별주,2016-01-04,2026-11-13,KOSPI,13586122962500.0,,KRW,stock_kr.csv,한진칼,116189006415.0
+207940,삼성바이오로직스,주식,주식,국내 개별주,2016-11-10,2026-11-13,KOSPI,65316531861000.0,,KRW,stock_kr.csv,삼성바이오로직스,114509072900.0
+NVDA,Nvidia,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,NVDA,51474324509266.0
+MU,Micron Technology,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,MU,33336831657687.0
+AMD,Advanced Micro Devices,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,AMD,23566019993115.0
+AAPL,Apple Inc.,주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,AAPL,21799109647238.0
+TSLA,"Tesla, Inc.",주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Consumer Discretionary,USD,stock_us.csv,TSLA,20173023811155.0
+META,Meta Platforms,주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Communication Services,USD,stock_us.csv,META,20164730330736.0
+MSFT,Microsoft,주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,MSFT,18595749906176.0
+AMZN,Amazon,주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Consumer Discretionary,USD,stock_us.csv,AMZN,17124386709067.0
+GOOGL,Alphabet Inc. (Class A),주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Communication Services,USD,stock_us.csv,GOOGL,16199405309416.0
+INTC,Intel,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,INTC,13445371637477.0
+AVGO,Broadcom,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,AVGO,11813341294450.0
+MRVL,Marvell Technology,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,MRVL,7332293076539.0
+ORCL,Oracle Corporation,주식,주식,해외 AI,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,ORCL,7103349017461.0
+LITE,Lumentum,주식,주식,해외 AI,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,LITE,6117019189911.0
+PLTR,Palantir Technologies,주식,주식,해외 AI,2020-10-05,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,PLTR,5913261240503.0
+LLY,Lilly (Eli),주식,주식,해외 개별주,2016-01-04,2026-11-13,S&P500,,Health Care,USD,stock_us.csv,LLY,5446374774851.0
+BE,Bloom Energy,주식,주식,해외 AI,2018-07-25,2026-11-13,S&P500,,Industrials,USD,stock_us.csv,BE,4888287743528.0
+STX,Seagate Technology,주식,주식,해외 AI,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,STX,4810916973006.0
+MRNA,Moderna,주식,주식,해외 개별주,2018-12-07,2026-11-13,S&P500,,Health Care,USD,stock_us.csv,MRNA,4484526466232.0
+AMAT,Applied Materials,주식,주식,해외 반도체,2016-01-04,2026-11-13,S&P500,,Information Technology,USD,stock_us.csv,AMAT,4290298807758.0

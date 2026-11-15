@@ -2,21 +2,27 @@
 
 **사이트: https://first-portfolio.streamlit.app**
 
-예산 · 투자 기간 · 설문 5문항 → 투자성향 판정 → 자산배분 추천 → 결과 화면
+예산 → 투자성향 설문 7문항(투자 기간은 2번 문항) → 투자성향 판정 → 자산배분 추천(ETF 20종 + 개별 종목) → 결과 화면 → 나만의 포트폴리오 제작하기 · 기업 분석
+
+통합 변경 내역과 검증 결과: `docs/팀원통합_456_변경사항.md`
 
 ## 폴더 구성
 
 | 파일 | 하는 일 |
 |---|---|
-| `app.py` | 웹 화면 (Streamlit). 첫 화면 → 진단 → 결과 3개 화면 |
-| `assets/style.css` | 화면 디자인 (색, 글꼴, 카드 모양) |
+| `app.py` | 웹 화면 (Streamlit). 첫 화면 → 진단(예산 + 7문항) → 결과 → 나만의 포트폴리오 제작하기 · 기업 분석 |
+| `assets/style.css`, `ui.py`, `.streamlit/config.toml` | 화면 디자인 (아이보리·네이비, 자산군 색 규칙, 공통 그래프 스타일) |
+| `c_integration.py`, `portfolio_editor.py`, `portfolio_core.py` | 나만의 포트폴리오 제작하기 (추천 비중 연결, 100% 상한, 1주 단위 금액·수량, 과거 성과 비교) |
+| `company_financials.py` | 기업 분석 (재무_2026.csv, 천원 → 억원, 매출·영업이익·부채비율 차트) |
+| `collect_data.py`, `select_universe.py` | ETF 20종·국내/미국 개별주 가격과 `data/products.csv` 생성 |
 | `recommender.py` | 추천 로직 전부 (성향 판정, 성향표, 최소분산·위험균형 최적화, 성과 지표) |
 | `factor.py` | 주식 몫 일부를 개별 종목으로: 저PER·저PBR·고ROE 순위합 상위 5종목 |
 | `backtest.py` | 연 1회(4월) 리밸런싱 백테스팅과 성과 지표 (CAGR·변동성·샤프·소르티노·MDD·연도별 수익률) |
-| `update_data.py` | ETF 8종 가격을 FinanceDataReader로 받아 `data/etf_prices.csv` 저장 |
+| `update_data.py` | (예전 8종용) ETF 8종 가격만 받아 `data/etf_prices.csv`를 덮어써요. 지금은 20종 파일이라 `collect_data.py`로 갱신하세요 |
 | `update_stock_data.py` | 연도별 팩터 종목 선정 → `data/factor_picks.csv`, 선정 종목 가격 → `data/stock_prices.csv` |
-| `data/etf_prices.csv` | 이미 받아 둔 가격 데이터 (2016-01-04 ~ 2026-10-30) |
-| `data/재무_2026.csv` | 강의 재무 데이터 (806종목, 2000~2025 회계연도) |
+| `data/etf_prices.csv`, `data/stock_kr.csv`, `data/stock_us.csv` | ETF 20종 · 국내 23종 · 미국 20종(원화 환산) 가격 (2016-01-04 ~ 2026-11-13) |
+| `data/products.csv` | 상품 정보 (종목코드는 문자열로 읽어요: `dtype=str`) |
+| `data/재무_2026.csv` | 국내 상장사 재무 데이터 (806종목, 2000~2025 회계연도, 금액 단위 천원) |
 | `requirements.txt` | 설치할 패키지 목록 |
 
 ## 처음 한 번만: 설치
@@ -50,7 +56,7 @@ streamlit run app.py
 `data/etf_prices.csv`가 이미 있어서 인터넷 없이도 돌아가요. 최신 가격으로 바꾸고 싶을 때만:
 
 ```bash
-python update_data.py
+python collect_data.py
 ```
 
 ## 팩터 종목 · 백테스팅 (선택)
