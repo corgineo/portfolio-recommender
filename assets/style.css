@@ -514,7 +514,10 @@ ul.checks li::marker { content: none; }
 
 /* ── 팀원 통합(456) 보완 ── */
 .tags span.na { color: var(--muted); background: transparent; border-style: dashed; }
-.st-key-card_perf, .st-key-card_buy, .st-key-card_split { margin-top: 8px; }
+.st-key-card_perf, .st-key-card_buy, .st-key-card_split, .st-key-card_annual { margin-top: 8px; }
+.scope-note { font-size: 14px; color: var(--ink-2) !important; background: var(--brand-soft); border-radius: 10px; padding: 10px 14px; margin: 0 0 12px; line-height: 1.6; }
+.scope-note b { color: var(--brand-dk); }
+table.mtab.wide td, table.mtab.wide th { white-space: nowrap; }
 .st-key-mock_edit [data-testid="stSlider"] label p { font-size: 14px; }
 @media (max-width: 900px) {
   .st-key-card_buy [data-testid="stHorizontalBlock"], .st-key-fin_card [data-testid="stHorizontalBlock"],
@@ -618,3 +621,4 @@ table.mtab td:first-child, table.mtab th:first-child { text-align: left; }
 
 /* 세 줄 상단 메뉴가 생기는 작은 화면에서도 비교 제목을 가리지 않아요. */
 @media (max-width: 360px) { #cmp-view { scroll-margin-top: 190px; } }
+table.mtab span.dn { color: var(--down); }

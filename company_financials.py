@@ -2,7 +2,7 @@
 
 - 화면 금액은 억원으로 바꿔 보여 줘요 (천원 ÷ 100,000 = 억원).
 - 부채비율 = 부채총계 ÷ 자본총계 × 100 (자본이 0 이하이면 계산하지 않아요), 영업이익률 = 영업이익 ÷ 매출액 × 100.
-- 빈 값은 0으로 채우지 않고 '자료 없음'으로 보여 줘요. 미국 기업 재무 자료는 아직 없어서 '자료 없음'으로 안내해요.
+- 빈 값은 0으로 채우지 않고 '자료 없음'으로 표시해요. 미국 기업은 재무 자료를 제공하지 않는다고 안내해요.
 """
 from pathlib import Path
 
@@ -35,9 +35,9 @@ def load_financials(path):
     data = data.rename(columns={"종목명": "기업명", "회계연도": "사업연도"})
     missing = [column for column in COLUMNS if column not in data]
     if missing:
-        raise ValueError("필수 열이 빠졌어요. " + ", ".join(missing))
+        raise ValueError("필수 열이 없습니다: " + ", ".join(missing))
     if data.empty:
-        raise ValueError("CSV에 재무 데이터 행이 없어요.")
+        raise ValueError("CSV에 재무 데이터가 없습니다.")
     for column in COLUMNS:
         data[column] = data[column].str.strip()
     codes = data["종목코드"].str.upper().str.replace(r"^A(?=[0-9A-Z]{6}$)", "", regex=True)
@@ -45,17 +45,17 @@ def load_financials(path):
         raise ValueError("종목코드 형식을 확인해 주세요. 예: A005930, 005930")
     data["종목코드"] = codes.str.zfill(6)
     if not data["사업연도"].str.fullmatch(r"[0-9]{4}", na=False).all():
-        raise ValueError("사업연도는 네 자리 숫자로 넣어 주세요.")
+        raise ValueError("사업연도는 네 자리 숫자로 입력해 주세요.")
     if data["기업명"].fillna("").eq("").any():
-        raise ValueError("기업명이 비어 있는 행이 있어요.")
+        raise ValueError("기업명이 비어 있는 행이 있습니다.")
     data["사업연도"] = data["사업연도"].astype(int)
     if data.duplicated(["종목코드", "사업연도"]).any():
-        raise ValueError("같은 종목코드와 사업연도가 두 번 이상 있어요. 한 행만 남겨 주세요.")
+        raise ValueError("종목코드·사업연도가 중복된 행이 있습니다. 한 행만 남겨 주세요.")
     for column in [*METRICS, *(c for c in ("자산총계", "부채총계", "자본총계") if c in data)]:
         raw = data[column].str.replace(",", "", regex=False).replace("", None)
         values = pd.to_numeric(raw, errors="coerce")
         if ((raw.notna() & values.isna()) | values.isin([float("inf"), float("-inf")])).any():
-            raise ValueError(f"{column}에는 숫자나 빈칸을 넣어 주세요.")
+            raise ValueError(f"{column} 열에는 숫자 또는 빈칸만 입력할 수 있습니다.")
         data[column] = values
     return data.sort_values(["종목코드", "사업연도"])
 
@@ -91,7 +91,7 @@ def _delta(table, col):
     a, b = table[col].iloc[-2], table[col].iloc[-1]
     if pd.isna(a) or pd.isna(b):
         return ""
-    return "전년보다 늘었어요." if b > a else ("전년보다 줄었어요." if b < a else "전년과 같아요.")
+    return "전년 대비 증가." if b > a else ("전년 대비 감소." if b < a else "전년과 동일.")
 
 
 PROFILE_KR = Path(__file__).resolve().parent / "data" / "company_profiles_kr.csv"
@@ -110,13 +110,13 @@ def load_profiles():
 
 
 def render_profile(code, us, kr_prof, us_prof):
-    """기업이 하는 일: 1~2문장 + 대표 제품 태그 + 출처. 소개가 없으면 정확히 '미확보'라고만 알려요"""
+    """주요 사업: 1~2문장 + 대표 제품 태그 + 출처. 소개가 없으면 '미확보' 상태와 사유만 표시해요"""
     prof = us_prof if us else kr_prof
     if code not in prof.index or (not us and prof.at[code, "status"] != "ok"):
-        why = ("상장법인목록의 회사 이름이 재무 자료와 달라(이름 변경 등) 같은 회사인지 확인되지 않았어요."
+        why = ("상장법인목록의 기업명이 재무 자료와 달라(사명 변경 등) 동일 기업 여부를 확인할 수 없습니다."
                if not us and code in prof.index and prof.at[code, "status"] == "name_mismatch"
-               else "상장법인목록에서 이 회사를 찾지 못했어요.")
-        html(f'<div class="biz na"><b>기업 소개 미확보</b><p>{why} 다른 회사 설명을 대신 쓰지 않았어요.</p></div>')
+               else "상장법인목록에 해당 기업이 없습니다.")
+        html(f'<div class="biz na"><b>기업 소개 미확보</b><p>{why}</p></div>')
         return
     r = prof.loc[code]
     tags = "".join(f"<span>{esc(t)}</span>" for t in r["tags"].split("|") if t)
@@ -132,28 +132,28 @@ def render_profile(code, us, kr_prof, us_prof):
                    f'확인일 {esc(r["collected_at"])}')
         else:
             src = (f'출처: <a href="{esc(r["source_url"])}" target="_blank" rel="noopener">{esc(r["source"])}</a> · '
-                   f'수집일 {esc(r["collected_at"])} 기준이라 최신 사업과 다를 수 있어요{hp}')
-    html(f'<div class="biz"><b>이 회사는 무슨 일을 하나요?</b><p>{esc(r["summary"])}</p>'
+                   f'수집일 {esc(r["collected_at"])} 기준(최신 사업과 다를 수 있음){hp}')
+    html(f'<div class="biz"><b>주요 사업</b><p>{esc(r["summary"])}</p>'
          f'<div class="tags light">{tags}</div><p class="src">{src}</p></div>')
     if not us and (r["industry"] or r["products"]):
-        with st.expander("상장법인목록 원문 보기 (업종 · 주요 제품)"):
+        with st.expander("상장법인목록 원문 (업종 · 주요 제품)"):
             st.markdown(f"**업종** {r['industry'] or '자료 없음'}  \n**주요 제품** {r['products'] or '자료 없음'}")
-            st.caption(f"KIND 상장법인목록(한국거래소) 원문 · 수집일 {r['collected_at']} · 지난 사업이 남아 있을 수 있어요.")
+            st.caption(f"KIND 상장법인목록(한국거래소) 원문 · 수집일 {r['collected_at']} · 과거 사업 내용이 포함될 수 있습니다.")
 
 
 def render_company_financials(focus=None, preselect=None, preselect_name=None, on_clear=None):
     """focus: 내 추천에 담긴 개별 종목 [{'name','code','us'}]
-    preselect: 다른 화면에서 고른 종목코드(미국은 티커). 미국 20종목은 사업 소개만 있고 재무는 '자료 없음'이에요.
+    preselect: 다른 화면에서 고른 종목코드(미국은 티커). 미국 20종목은 사업 소개만 있고 재무는 제공하지 않아요.
     목록에 없는 종목이면 다른 회사로 바꿔 보여 주지 않고 '자료 없음' 상태를 유지해요."""
-    html("""<div class="page-h"><span class="eyebrow">기업 분석</span><h1>기업 살펴보기</h1>
-    <p>회사가 무슨 사업을 하는지, 얼마나 팔고(매출액) 본업으로 얼마나 남기는지(영업이익), 빚은 얼마나 되는지(부채비율)를 보여 드려요.</p></div>""")
+    html("""<div class="page-h"><span class="eyebrow">기업 분석</span><h1>기업 정보</h1>
+    <p>주요 사업과 연도별 매출액·영업이익, 부채비율을 제공합니다.</p></div>""")
     try:
         data = load_financials(CSV_PATH)
     except FileNotFoundError:
-        st.info("재무 자료가 아직 준비되지 않았어요.")
+        st.info("재무 자료 파일이 없습니다.")
         return
     except (ValueError, OSError) as exc:
-        st.error(f"재무 자료를 읽지 못했어요. {exc}")
+        st.error(f"재무 자료를 읽지 못했습니다. {exc}")
         return
     kr_prof, us_prof = load_profiles()
 
@@ -162,15 +162,15 @@ def render_company_financials(focus=None, preselect=None, preselect_name=None, o
     focus = focus or []
     if focus:
         chips = "".join(f"<span>{esc(f['name'])}{' · 미국' if f['us'] else ''}</span>" for f in focus)
-        html(f'<div class="tags light"><span class="lbl">내 추천 종목</span>{chips}</div>')
+        html(f'<div class="tags light"><span class="lbl">추천 편입 종목</span>{chips}</div>')
 
     # 목록에 없는 종목을 골라 들어온 경우: 다른 회사로 대신 보여 주지 않아요
     if preselect and preselect not in names and preselect not in us_names:
         nm = preselect_name or preselect
         html(f"""<div class="fin-head"><span>선택한 기업</span><h2>{esc(nm)} <em>({esc(preselect)})</em></h2></div>""")
-        st.warning(f"{nm}: 이 서비스에 기업 소개와 재무 자료가 없어요. 값을 임의로 채우지 않았어요.")
+        st.warning(f"{nm}: 기업 소개와 재무 자료를 제공하지 않는 종목입니다.")
         if on_clear is not None:
-            st.button("다른 기업 검색하기", key="company_clear", on_click=on_clear)
+            st.button("다른 기업 검색", key="company_clear", on_click=on_clear)
         return
 
     mine = [f["code"] for f in focus if f["code"] in names or f["code"] in us_names]
@@ -182,19 +182,19 @@ def render_company_financials(focus=None, preselect=None, preselect_name=None, o
 
     def label(t):
         nm = names.get(t) or us_names.get(t, t)
-        return f"{nm} ({t})" + (" · 미국" if t in us_names and t not in names else "") + (" · 내 추천" if t in mine else "")
-    code = st.selectbox(f"기업 검색 (이름이나 종목코드 · 국내 {len(names)}개 · 미국 {len(us_names)}개)", options,
+        return f"{nm} ({t})" + (" · 미국" if t in us_names and t not in names else "") + (" · 추천 편입" if t in mine else "")
+    code = st.selectbox(f"기업 검색 (기업명 또는 종목코드 · 국내 {len(names)}개 · 미국 {len(us_names)}개)", options,
                         key=key, format_func=label)
     us = code in us_names and code not in names
     nm = us_names[code] if us else names[code]
     html(f"""<div class="fin-head"><span>선택한 기업</span><h2>{esc(nm)} <em>({code}{' · 미국' if us else ''})</em></h2></div>""")
     render_profile(code, us, kr_prof, us_prof)
     if us:
-        st.info("미국 기업이라 이 서비스에 재무 자료가 아직 없어요. 매출·영업이익·부채비율은 보여 드리지 않고, 값을 임의로 채우지 않았어요.")
+        st.info("미국 기업은 재무 자료(매출액·영업이익·부채비율)를 제공하지 않습니다.")
         return
     table = company_table(data, code)
     if table is None or table[["매출액", "영업이익"]].isna().all().all():
-        st.info("이 기업은 매출액·영업이익 자료가 없어요.")
+        st.info("매출액·영업이익 자료가 없습니다.")
         return
     last = table.iloc[-1]
     yr = f"{int(last['사업연도'])}년"
@@ -215,9 +215,9 @@ def render_company_financials(focus=None, preselect=None, preselect_name=None, o
             st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, key="fin_bar")
         with c2:
             html(f"""<div class="stack">
-              <div><span>매출액 · {yr}</span><b>{fmt(last['매출액'])}</b><em>물건·서비스를 팔아 들어온 돈이에요. {_delta(table, '매출액')}</em></div>
-              <div><span>영업이익 · {yr}</span><b>{fmt(last['영업이익'])}</b><em>본업으로 번 돈에서 비용을 빼고 남긴 돈이에요. {_delta(table, '영업이익')}</em></div>
-              <div><span>부채비율 · {yr}</span><b>{fmt(last['부채비율(%)'], '%')}</b><em>자기 돈(자본) 대비 빚(부채)의 크기예요. 높을수록 빚 부담이 커요.</em></div>
+              <div><span>매출액 · {yr}</span><b>{fmt(last['매출액'])}</b><em>제품·서비스 판매 수입입니다. {_delta(table, '매출액')}</em></div>
+              <div><span>영업이익 · {yr}</span><b>{fmt(last['영업이익'])}</b><em>매출에서 영업비용을 뺀 본업 이익입니다. {_delta(table, '영업이익')}</em></div>
+              <div><span>부채비율 · {yr}</span><b>{fmt(last['부채비율(%)'], '%')}</b><em>자본 대비 부채의 비율입니다. 높을수록 부채 부담이 큽니다.</em></div>
             </div>""")
 
         c3, c4 = st.columns([1.618, 1], gap="large", vertical_alignment="center")
@@ -234,13 +234,13 @@ def render_company_financials(focus=None, preselect=None, preselect_name=None, o
             fig2.update_yaxes(ticksuffix="%")
             st.plotly_chart(fig2, width="stretch", config={"displayModeBar": False}, key="fin_ratio")
         with c4:
-            html('<ul class="terms plain"><li><b>부채비율</b> 100%면 빚과 자기 돈이 같다는 뜻이에요. 업종마다 보통 수준이 달라요.</li>'
-                 '<li><b>영업이익률</b> 매출 100원 중 본업으로 남긴 돈이 몇 원인지예요.</li></ul>')
+            html('<ul class="terms plain"><li><b>부채비율</b> 100%이면 부채와 자본의 규모가 같습니다. 적정 수준은 업종마다 다릅니다.</li>'
+                 '<li><b>영업이익률</b> 매출 100원당 영업이익입니다.</li></ul>')
         st.caption(f"국내 상장사 연간 재무 자료 · {nm} ({code}) · "
                    f"사업연도 {int(table['사업연도'].iloc[0])}~{int(table['사업연도'].iloc[-1])} · 단위 억원 · "
-                   "빈 값은 ‘자료 없음’으로 표시해요.")
+                   "값이 없는 항목은 ‘자료 없음’으로 표시")
 
-    with st.expander("연도별 자료 표"):
+    with st.expander("연도별 재무 표"):
         disp = pd.DataFrame({"사업연도": x})
         for c in ["매출액", "영업이익", "당기순이익", "부채총계", "자본총계"]:
             disp[f"{c}(억원)"] = [fmt(v, "") for v in table[c]]

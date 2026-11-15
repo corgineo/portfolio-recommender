@@ -48,10 +48,10 @@ def compare_target_weights(prices, base, edited, base_cash, edited_cash, budget)
     cols = sorted({code_to_name[t] for t in used})
     missing = [c for c in cols if c not in daily.columns]
     if missing:
-        raise ValueError(f'가격 자료가 없는 상품이 있어요: {", ".join(missing)}')
+        raise ValueError(f'가격 자료가 없는 상품: {", ".join(missing)}')
     daily = daily[cols]
     if len(daily) < 2 or daily.isna().any().any() or not np.isfinite(daily.to_numpy()).all():
-        raise ValueError('성과 비교에 필요한 공통 가격 자료가 부족해요.')
+        raise ValueError('성과 비교에 필요한 공통 가격 자료가 부족합니다.')
     metrics, curves = [], {}
     for label, alloc in [('추천안', base), ('내 구성', edited)]:
         alloc = alloc[alloc.target_pct > 0]
@@ -65,8 +65,8 @@ def compare_target_weights(prices, base, edited, base_cash, edited_cash, budget)
     return {'metrics': pd.DataFrame(metrics).set_index('구성'), 'nav': pd.DataFrame(curves),
             'start': recent.index[0], 'end': recent.index[-1],
             'methodology': f'{recent.index[0]:%Y.%m.%d} ~ {recent.index[-1]:%Y.%m.%d} · 시작값 100 · '
-            '지금 목표 비중을 매일 유지했다고 가정한 과거 모의 계산이에요. 현금 수익 0%, 분배금·수수료·세금은 빠져 있어요. '
-            '앞으로의 수익을 보장하지 않아요.'}
+            '현재 목표 비중을 매일 유지한다고 가정한 모의 계산입니다. 현금 수익률 0% 가정, 분배금·수수료·세금 제외. '
+            '과거 성과는 미래 수익을 보장하지 않습니다.'}
 
 
 def editor_inputs(prices, weights):

@@ -240,7 +240,7 @@ def test_flow_quiz_result_build_company(app):
     at.button(key='to_mock_top').click().run()
     assert at.session_state['page'] == 'mock' and not at.exception
     text = _texts(at)
-    assert not at.error and '과거 성과를 계산하지 못했어요' not in text
+    assert not at.error and '과거 성과를 계산하지 못했습니다' not in text
     assert any('class="mtab"' in m.value for m in at.markdown)   # 성과 비교 지표 표
     for w in EDU_WORDS:
         assert w not in text, w
@@ -316,7 +316,7 @@ def test_editor_slider_number_sync_and_live_compare(app):
     # 비교 패널(구성 차이 목록·과거 성과 표)이 같은 실행에서 바로 바뀌어요
     md = '\n'.join(m.value for m in at.markdown)
     assert 'class="changes one"' in md and 'class="mtab"' in md
-    assert not any('과거 성과를 계산하지 못했어요' in w.value for w in at.warning)
+    assert not any('과거 성과를 계산하지 못했습니다' in w.value for w in at.warning)
 
 
 def test_editor_multi_edit_persists_across_filters_and_pages(app):
@@ -373,8 +373,8 @@ def _won(text):
 def _budget_shown(at):
     """예산 입력값 · model 예산 · 요약 카드(실제로 사는 돈 + 남는 현금)로 거꾸로 계산한 예산"""
     md = '\n'.join(m.value for m in at.markdown)
-    spent = _won(re.search(r'<span>실제로 사는 돈</span><b>([^<]+)</b>', md).group(1))
-    cash = _won(re.search(r'<span>남는 현금</span><b>([^<]+)</b>', md).group(1))
+    spent = _won(re.search(r'<span>매수 예정 금액</span><b>([^<]+)</b>', md).group(1))
+    cash = _won(re.search(r'<span>잔여 현금</span><b>([^<]+)</b>', md).group(1))
     return at.number_input(key=f'{EK}_budget').value, at.session_state[f'{EK}_model']['budget'], spent + cash
 
 
@@ -442,7 +442,7 @@ def test_compare_chart_baseline_fixed_and_mine_moves(app):
     nav0, bar0 = _charts(at)
     assert nav0['원래 추천안'] == nav0['내 수정안']                 # 처음에는 같은 비중 → 두 선이 겹쳐요
     assert all(v[0] == v[1] for v in bar0.values())
-    assert '두 선이 겹쳐 보여요' in '\n'.join(m.value for m in at.markdown)
+    assert '두 선이 겹쳐 표시됩니다' in '\n'.join(m.value for m in at.markdown)
     rec = dict(_model(at))
     t = max(rec, key=rec.get)
     _show(at, t)[1].set_value(0.0).run()                          # 실제 수치를 크게 바꿔요
@@ -504,11 +504,11 @@ def test_no_picks_due_to_budget_explained(app):
     picks = rc.choose_picks('공격형', prices, 100_000)
     slots = min(rc.MAX_STOCKS, int(0.44 * rc.STOCK_SHARE / rc.MIN_WEIGHT + 1e-9))   # 공격형 7개
     if not picks:
-        assert '1주 가격보다 작아 개별 종목을 담지 못했어요' in text
+        assert '1주 가격보다 작아 개별 종목을 편입하지 않았습니다' in text
     else:
         assert f'개별 종목 {len(picks)}개' in text
         if len(picks) < slots:                             # 소액이라 일부만: 성향 탓이 아니라 예산 탓이라고 설명
-            assert f'{slots}개 대신 {len(picks)}개만' in text
+            assert f'{slots}개 대신 {len(picks)}개를 편입' in text
     assert '이 성향은 주식 비중' not in text
 
 
@@ -529,7 +529,7 @@ def test_company_us_stock_profile_without_financials(app):
         assert any('엔비디아' in m.value and 'fin-head' in m.value for m in at.markdown)
         biz = _biz(at)
         assert biz and 'GPU' in biz[0] and 'nvidia.com' in biz[0] and '2026-11-14' in biz[0]
-        assert any('재무 자료가 아직 없어요' in i.value for i in at.info)
+        assert any('재무 자료(매출액·영업이익·부채비율)를 제공하지 않습니다' in i.value for i in at.info)
         assert not at.get('plotly_chart')                  # 미국 재무를 만들지 않아요
     text = _texts(at)
     assert '천원' not in text and 'data/' not in text
@@ -541,7 +541,7 @@ def test_company_unknown_code_stays_no_data(app):
     at.session_state['page'] = 'company'
     for _ in range(2):
         at.run()
-        assert any('기업 소개와 재무 자료가 없어요' in w.value for w in at.warning)
+        assert any('기업 소개와 재무 자료를 제공하지 않는' in w.value for w in at.warning)
         assert not at.selectbox and not at.get('plotly_chart')
     at.button(key='company_clear').click().run()           # 사용자가 직접 다른 기업 검색을 고를 때만
     assert at.selectbox(key='company_financials_ticker') is not None and at.get('plotly_chart')
@@ -558,7 +558,7 @@ def test_company_search_covers_kr_and_us(app):
     assert '전기차' in _biz(at)[0] and not at.get('plotly_chart')
     at.selectbox(key='company_financials_ticker').set_value('000040').run()   # 이름이 달라 소개 미확보인 회사
     b = _biz(at)[0]
-    assert '기업 소개 미확보' in b and '이름' in b and at.get('plotly_chart')   # 재무는 그대로 보여요
+    assert '기업 소개 미확보' in b and '기업명' in b and at.get('plotly_chart')   # 재무는 그대로 보여요
     at.selectbox(key='company_financials_ticker').set_value('005930').run()
     b = _biz(at)[0]
     assert '메모리 반도체' in b and 'kind.krx.co.kr' in b and '수집일 2026-11-14' in b and '최신 사업과 다를 수' in b
@@ -650,4 +650,4 @@ def test_result_pages_all_profiles(app, score, budget):
     at.session_state['page'] = 'mock'
     at.run()
     assert not at.exception and not at.error
-    assert '과거 성과를 계산하지 못했어요' not in _texts(at)
+    assert '과거 성과를 계산하지 못했습니다' not in _texts(at)
